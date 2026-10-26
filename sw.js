@@ -6,7 +6,7 @@
      - iconițe și fonturi Google → cache întâi, reîmprospătat în fundal
        (ca aplicația să meargă offline)
 */
-var VERSION = 'v1.0.0';
+var VERSION = 'v1.1.0';
 var SHELL = 'sapt-shell-' + VERSION;
 var RUNTIME = 'sapt-runtime-' + VERSION;
 
@@ -14,12 +14,14 @@ var SHELL_FILES = [
   './',
   './index.html',
   './manifest.json',
+  './firebase-config.js',
+  './sync.js',
   './icon-192.png',
   './icon-512.png',
   './icon-maskable-512.png'
 ];
 
-var FRESH = ['/', '/index.html', '/manifest.json'];
+var FRESH = ['/', '/index.html', '/manifest.json', '/sync.js', '/firebase-config.js'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
@@ -64,7 +66,8 @@ self.addEventListener('fetch', function (e) {
 
   var sameOrigin = url.origin === self.location.origin;
   var cacheable = url.hostname === 'fonts.googleapis.com' ||
-                  url.hostname === 'fonts.gstatic.com';
+                  url.hostname === 'fonts.gstatic.com' ||
+                  url.hostname === 'www.gstatic.com';
   if (!sameOrigin && !cacheable) return;
 
   /* documentul și fișierele care se schimbă des: rețea întâi */

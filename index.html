@@ -96,6 +96,10 @@ ul.wl .wempty{color:var(--muted);font-size:.9rem;padding:4px 0}
 .updbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:40;
   width:calc(100% - 24px);max-width:736px;background:var(--accent);border:1px solid var(--accent);color:#fff;font-weight:700;
   border-radius:12px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.18);text-align:center}
+.syncl{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;font-size:.92rem;color:var(--muted)}
+.syncl input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+.syncacts{display:flex;gap:8px;margin:4px 0 2px}
+.syncacts[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -138,6 +142,19 @@ ul.wl .wempty{color:var(--muted);font-size:.9rem;padding:4px 0}
     <span id="weekCnt"></span>
   </div>
   <div id="days"></div>
+  <details class="box" id="syncBox">
+    <summary><h2>&#8596; Sincronizare telefon &#537;i laptop</h2><span class="cnt" id="syncState"></span></summary>
+    <div class="mbody">
+      <p class="hint" id="syncHint">Se preg&#259;te&#537;te&#8230;</p>
+      <div id="syncForm" hidden>
+        <label class="syncl">Email<input type="email" id="syncEmail" autocomplete="username" autocapitalize="off" spellcheck="false"></label>
+        <label class="syncl">Parol&#259;<input type="password" id="syncPass" autocomplete="current-password"></label>
+        <div class="syncacts"><button class="pri" id="syncIn" type="button">Conecteaz&#259;</button></div>
+      </div>
+      <div class="syncacts" id="syncOutBox" hidden><button id="syncOut" type="button">Deconecteaz&#259;</button></div>
+      <p class="hint" id="syncMsg"></p>
+    </div>
+  </details>
 </main>
 <button type="button" class="updbar" id="upd" hidden>Versiune nou&#259; &#8212; apas&#259; ca s&#259; o folose&#537;ti</button>
 <div class="toast" id="toast" role="status"><span>Ai bifat tot! Lista s-a reluat.</span><button id="undoReset">Anulează</button></div>
@@ -439,5 +456,7 @@ var el=$('d-'+todayStr);if(el&&el.getBoundingClientRect().top>window.innerHeight
   }).catch(function(){});
 })();
 </script>
+<script src="firebase-config.js"></script>
+<script src="sync.js"></script>
 </body>
 </html>

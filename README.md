@@ -26,6 +26,29 @@ Când ai bifat tot, lista se reia de la capăt, fiecare task pe ziua lui.
 Când toate task-urile de pe zile sunt bifate, runda se reia: fiecare task se întoarce
 pe ziua lui din săptămâna următoare. Resetarea se poate anula din bara care apare jos.
 
+## Sincronizare
+
+Cardul **Sincronizare telefon și laptop**, la finalul paginii. Te conectezi cu
+**același cont ca la [Croșetat](https://github.com/AlinaMadalina/Crosetat)** — același
+proiect Firebase (`crosetat-270da`), aceeași parolă. Aplicațiile sunt separate și scriu
+în locuri diferite: asta la `users/<uid>/apps/saptamana`, cealaltă la
+`users/<uid>/state/current`. Regulile existente le acoperă pe amândouă, nu e nevoie de
+nimic nou în consolă.
+
+Cum funcționează:
+
+- toată starea stă într-un singur document Firestore, serializată în câmpul `json`;
+- salvările locale se grupează la 1,5 s, iar `onSnapshot` aduce imediat ce s-a schimbat
+  pe celălalt dispozitiv;
+- cache-ul persistent Firestore face ca totul să meargă offline: ce scrii fără internet
+  pleacă singur la următorul semnal.
+
+Un detaliu care contează: întreținerea pe care aplicația o face singură la pornire
+(mutarea task-urilor restante, resetul zilnic și cel săptămânal) rulează **înainte** ca
+`sync.js` să se încarce, deci nu trece prin `window.SaptSync` și nu marchează starea ca
+schimbată local. Altfel un dispozitiv închis câteva zile ar părea mereu „mai nou” la
+reconectare și ar suprascrie modificările reale făcute pe celălalt.
+
 ## Cum ajunge pe telefon un update făcut pe laptop
 
 1. Modifici fișierele aici.
@@ -45,6 +68,8 @@ pe ziua lui din săptămâna următoare. Resetarea se poate anula din bara care 
 | `index.html` | toată aplicația |
 | `manifest.json` | numele, iconițele și modul `standalone` (instalare) |
 | `sw.js` | cache offline + mecanismul de update; `VERSION` se crește la fiecare deploy |
+| `sync.js` | sincronizarea peste Firestore |
+| `firebase-config.js` | configurația proiectului Firebase |
 | `icon-*.png` | iconițele de pe ecranul principal |
 
 ## Date
