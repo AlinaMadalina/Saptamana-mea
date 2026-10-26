@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#E8EDEF" media="(prefers-color-scheme:light)">
+<meta name="theme-color" content="#172126" media="(prefers-color-scheme:dark)">
+<meta name="description" content="Task-uri care se repeta saptamanal. Ce nu bifezi se muta singur pe ziua urmatoare.">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="S&#259;pt&#259;m&#226;na">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Săptămâna mea</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E8EDEF;--surface:#FBFAF7;--ink:#24343C;--muted:#5E6F77;--line:#CBD5D9;
+  --accent:#9A6535;--accent-soft:#EBDCCB;--done:#6F8E7D;--late:#A4531E;--late-soft:#F6E2D3;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#172126;--surface:#1F2C32;--ink:#E7ECEE;--muted:#9AAAB1;--line:#33444C;
+  --accent:#D39A63;--accent-soft:#3A2E24;--done:#8FB19D;--late:#E59A68;--late-soft:#3B2A20;}}
+:root[data-theme="dark"]{
+  --bg:#172126;--surface:#1F2C32;--ink:#E7ECEE;--muted:#9AAAB1;--line:#33444C;
+  --accent:#D39A63;--accent-soft:#3A2E24;--done:#8FB19D;--late:#E59A68;--late-soft:#3B2A20;}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 "Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:760px;margin:0 auto;padding:18px 14px 60px}
+h1{font-family:"Bricolage Grotesque",Georgia,serif;font-weight:800;font-size:clamp(1.8rem,7vw,2.4rem);line-height:1.05;margin:6px 0 4px;letter-spacing:-.02em}
+.sub{color:var(--muted);margin:0 0 14px;font-size:.95rem}
+.nav{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.nav .range{flex:1;text-align:center;font-weight:700}
+button{font:inherit;cursor:pointer;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+button.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.opts{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 2px 12px;font-size:.92rem;color:var(--muted)}
+.opts label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.opts input{width:20px;height:20px;accent-color:var(--done)}
+.day{background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden}
+.day.today{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.day.past{opacity:.82}
+.dh{display:flex;align-items:baseline;gap:10px;padding:12px 14px 6px}
+.dh h2{font-family:"Bricolage Grotesque",Georgia,serif;font-weight:600;font-size:1.15rem;margin:0}
+.dh .date{color:var(--muted);font-size:.9rem;flex:1}
+.dh .tag{font-size:.78rem;font-weight:700;background:var(--accent);color:#fff;border-radius:6px;padding:1px 7px}
+.dh .cnt{font-size:.85rem;color:var(--muted)}
+ul.tasks{list-style:none;margin:0;padding:0 8px}
+.task{display:grid;grid-template-columns:28px 1fr auto auto;gap:8px;align-items:start;padding:9px 6px;border-top:1px solid var(--line)}
+.task input[type=checkbox]{width:24px;height:24px;margin:1px 0 0;accent-color:var(--done);cursor:pointer}
+.task .t{word-break:break-word;cursor:text}
+.task.done .t{color:var(--muted);text-decoration:line-through}
+.hide-done .task.done{display:none}
+.moved{display:inline-block;margin-top:3px;font-size:.78rem;font-weight:700;color:var(--late);background:var(--late-soft);border-radius:6px;padding:0 7px}
+.task .lk{border:0;background:transparent;padding:2px 6px;font-size:1rem;opacity:.35;filter:grayscale(1)}
+.task .lk[aria-pressed=true]{opacity:1;filter:none}
+.locked-tag{display:inline-block;margin-top:3px;font-size:.78rem;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:0 7px}
+.missed{display:inline-block;margin-top:3px;font-size:.78rem;font-weight:700;color:var(--late);background:var(--late-soft);border-radius:6px;padding:0 7px}
+.task .x{border:0;background:transparent;color:var(--muted);padding:2px 8px;font-size:1rem}
+.task input.edit{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:4px 8px}
+.add{display:flex;gap:8px;padding:10px 14px 14px}
+.add input{flex:1;min-width:0;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+.add button{padding:8px 14px}
+details.box{background:var(--surface);border:1px solid var(--line);border-radius:14px;margin:0 0 12px}
+details.box summary{cursor:pointer;list-style:none;padding:12px 14px;display:flex;align-items:center;gap:10px}
+details.box summary::-webkit-details-marker{display:none}
+details.box summary h2{font-family:"Bricolage Grotesque",Georgia,serif;font-weight:600;font-size:1.1rem;margin:0;flex:1}
+details.box summary .cnt{font-size:.85rem;color:var(--muted)}
+.mbody{padding:0 14px 12px}
+.mbody .hint{font-size:.88rem;color:var(--muted);margin:0 0 10px}
+.mset{display:flex;align-items:center;gap:8px;font-size:.92rem;color:var(--muted);margin-bottom:8px}
+.mset select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:5px 8px}
+ol.mq{margin:0;padding:0;list-style:none;counter-reset:q}
+.mq li{display:grid;grid-template-columns:26px 1fr auto auto auto;gap:6px;align-items:center;padding:7px 0;border-top:1px solid var(--line);counter-increment:q}
+.mq li::before{content:counter(q);color:var(--muted);font-size:.85rem;text-align:center}
+.mq li .badge{display:inline-block;margin-left:6px;font-size:.75rem;font-weight:700;border-radius:6px;padding:0 6px;background:var(--accent);color:#fff}
+.mq li button{border:0;background:transparent;color:var(--muted);padding:2px 7px}
+.mq li button:disabled{opacity:.25}
+.mtag{display:inline-block;margin-top:3px;margin-right:4px;font-size:.78rem;font-weight:700;color:var(--done);border:1px solid var(--done);border-radius:6px;padding:0 6px}
+ul.wl{list-style:none;margin:0;padding:0}
+ul.wl .task{grid-template-columns:28px 1fr auto}
+ul.wl .t,.task .wt{cursor:default}
+ul.wl .wempty{color:var(--muted);font-size:.9rem;padding:4px 0}
+.task.preview{opacity:.6}
+.task.preview .t{font-style:italic;cursor:default}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;display:none;align-items:center;gap:12px;background:var(--ink);color:var(--surface);border-radius:12px;padding:10px 12px 10px 16px;box-shadow:0 6px 24px rgba(0,0,0,.25);max-width:calc(100% - 24px);font-size:.95rem}
+.toast.show{display:flex}
+.toast button{background:transparent;color:var(--surface);border-color:currentColor;padding:5px 10px;white-space:nowrap}
+.empty{color:var(--muted);font-size:.9rem;padding:2px 14px 4px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.updbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:40;
+  width:calc(100% - 24px);max-width:736px;background:var(--accent);border:1px solid var(--accent);color:#fff;font-weight:700;
+  border-radius:12px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.18);text-align:center}
+</style>
+</head>
+<body>
+<main>
+  <h1>Săptămâna mea</h1>
+  <p class="sub">Task-urile se repetă în fiecare săptămână. Ce bifezi trece la finalul zilei de azi; ce nu bifezi se mută automat pe ziua următoare. Când ai bifat tot, lista se reia de la capăt, fiecare task pe ziua lui. Task-urile blocate cu 🔒 rămân în ziua lor, bifate sau nu.</p>
+  <div class="nav">
+    <button id="prev" aria-label="Săptămâna anterioară">‹</button>
+    <div class="range" id="range"></div>
+    <button id="next" aria-label="Săptămâna următoare">›</button>
+    <button id="today">Azi</button>
+  </div>
+  <details class="box" id="daily">
+    <summary><h2>↻ Task-uri zilnice</h2><span class="cnt" id="dCnt"></span></summary>
+    <div class="mbody">
+      <p class="hint">Apar în fiecare zi, primele în lista de azi, înaintea task-urilor mutate de pe alte zile. Când le bifezi, trec la final, ca orice task făcut. A doua zi apar iar nebifate.</p>
+      <ul class="wl" id="dl"></ul>
+      <form class="add" id="dAdd" style="padding:10px 0 0"><input placeholder="Task zilnic nou" aria-label="Task zilnic nou"><button class="pri" type="submit">+</button></form>
+    </div>
+  </details>
+  <details class="box" id="weekly">
+    <summary><h2>↻ Task-uri săptămânale</h2><span class="cnt" id="wCnt"></span></summary>
+    <div class="mbody">
+      <p class="hint">Ce nu e bifat apare în lista de azi și trece pe ziua următoare până îl faci. Când îl bifezi, dispare din zi. În fiecare luni se debifează toate.</p>
+      <ul class="wl" id="wl"></ul>
+      <form class="add" id="wAdd" style="padding:10px 0 0"><input placeholder="Task săptămânal nou" aria-label="Task săptămânal nou"><button class="pri" type="submit">+</button></form>
+    </div>
+  </details>
+  <details class="box" id="monthly">
+    <summary><h2>↻ Task-uri lunare</h2><span class="cnt" id="mCnt"></span></summary>
+    <div class="mbody">
+      <p class="hint">La fiecare 7 zile apare în săptămână primul task din listă. După ce îl bifezi, trece la finalul listei. Dacă nu îl bifezi, se mută de pe o zi pe alta ca orice task și nu apare altul până nu îl termini.</p>
+      <label class="mset">Apare în fiecare <select id="mDay"></select></label>
+      <ol class="mq" id="mq"></ol>
+      <form class="add" id="mAdd" style="padding:10px 0 0"><input placeholder="Task lunar nou" aria-label="Task lunar nou"><button class="pri" type="submit">+</button></form>
+    </div>
+  </details>
+  <div class="opts">
+    <label><input type="checkbox" id="hideDone"> Ascunde ce am făcut</label>
+    <span id="weekCnt"></span>
+  </div>
+  <div id="days"></div>
+</main>
+<button type="button" class="updbar" id="upd" hidden>Versiune nou&#259; &#8212; apas&#259; ca s&#259; o folose&#537;ti</button>
+<div class="toast" id="toast" role="status"><span>Ai bifat tot! Lista s-a reluat.</span><button id="undoReset">Anulează</button></div>
+<script>
+(function(){
+var KEY='saptamana-mea-v1';
+var DAYS=['Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă','Duminică'];
+var MONTHS=['ian','feb','mar','apr','mai','iun','iul','aug','sep','oct','nov','dec'];
+var st={tasks:[],hideDone:false,monthly:[],mDay:0,mLast:null,weekly:[],wWeek:null,wOpen:false,daily:[],dDate:null,dOpen:false};
+try{var raw=JSON.parse(localStorage.getItem(KEY));if(raw&&raw.tasks)st=Object.assign(st,raw);}catch(e){}
+var applyingRemote=false;
+function save(){try{localStorage.setItem(KEY,JSON.stringify(st));}catch(e){}
+  if(applyingRemote)return;
+  try{if(window.SaptSync&&window.SaptSync.onLocalSave)window.SaptSync.onLocalSave(st);}catch(e){}}
+/* API pentru un viitor strat de sincronizare. Nu schimba numele. */
+window.SaptApp={
+  KEY:KEY,
+  getState:function(){return st;},
+  setState:function(ns){
+    if(!ns||!Array.isArray(ns.tasks))return false;
+    applyingRemote=true;
+    try{st=ns;editing=null;save();render();}finally{applyingRemote=false;}
+    return true;}
+};
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function parse(s){var a=s.split('-');return new Date(+a[0],a[1]-1,+a[2]);}
+function addDays(d,n){var x=new Date(d);x.setDate(x.getDate()+n);return x;}
+function monday(d){var x=new Date(d.getFullYear(),d.getMonth(),d.getDate());var w=(x.getDay()+6)%7;return addDays(x,-w);}
+function wdOf(s){return (parse(s).getDay()+6)%7;}
+function dayName(s){return DAYS[(parse(s).getDay()+6)%7];}
+function pretty(d){return d.getDate()+' '+MONTHS[d.getMonth()];}
+var todayStr=ymd(new Date()),weekStart=monday(new Date()),editing=null,lastReset=null,toastTimer=null;
+// Weekly repeat: each normal task remembers its home weekday (wd) and its place in that day (ho).
+// Tasks already done in previous weeks stay there as history (arch) and don't repeat.
+(function(){var wk0=ymd(weekStart),ch=false;
+  st.tasks.forEach(function(t){
+    if(t.mid||t.arch||t.wd!==undefined)return;ch=true;
+    if(t.done&&t.date<wk0){t.arch=true;return;}
+    t.wd=(parse(t.from||t.date).getDay()+6)%7;t.ho=t.order;
+  });
+  // A locked task stays on its day: undo the old "checked -> moved to today" and make that day its home.
+  st.tasks.forEach(function(t){
+    if(!t.locked||t.arch)return;
+    if(t.done&&t.prev){t.date=t.prev.date;t.order=t.prev.order;delete t.prev;ch=true;}
+    if(isRec(t)&&t.wd!==wdOf(t.date)){t.wd=wdOf(t.date);t.ho=t.order;ch=true;}
+  });
+  if(ch)try{localStorage.setItem(KEY,JSON.stringify(st));}catch(e){}
+})();
+function isRec(t){return t.wd!==undefined&&!t.mid&&!t.arch;}
+function nextWd(wd){var d=addDays(parse(todayStr),1);while((d.getDay()+6)%7!==wd)d=addDays(d,1);return ymd(d);}
+// When every weekly task is done (a missed locked one counts too), they all start over,
+// each on the next occurrence of its own weekday.
+function checkCycle(){
+  var rec=st.tasks.filter(isRec);if(!rec.length)return false;
+  if(!rec.every(function(t){return t.done||(t.locked&&t.date<todayStr);}))return false;
+  lastReset=JSON.stringify(st.tasks);
+  rec.forEach(function(t){t.done=false;t.date=nextWd(t.wd);t.order=t.ho;delete t.from;delete t.moves;delete t.prev;});
+  showToast();return true;
+}
+function showToast(){var el=document.getElementById('toast');el.classList.add('show');clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){el.classList.remove('show');lastReset=null;},8000);}
+var $=function(id){return document.getElementById(id);};
+var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+
+function maxOrder(date){var m=0;st.tasks.forEach(function(t){if(t.date===date&&t.order>m)m=t.order;});return m;}
+
+// Unfinished tasks from days that are over go to the end of the next day.
+// If several days have passed, they keep moving forward until they reach today.
+function rollover(){
+  todayStr=ymd(new Date());
+  var late=st.tasks.filter(function(t){return !t.done&&!t.locked&&t.date<todayStr;});
+  if(!late.length)return false;
+  late.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:a.order-b.order;});
+  late.forEach(function(t){
+    if(!t.from)t.from=t.date;
+    var d=parse(t.date),days=0;
+    while(ymd(d)<todayStr){d=addDays(d,1);days++;}
+    t.moves=(t.moves||0)+days;
+    t.date=todayStr;t.order=maxOrder(todayStr)+1;
+  });
+  save();return true;
+}
+
+// Weekly checklist: tasks without a day, ticked any time; every Monday they all start unticked.
+function ensureWeekly(){
+  var wk=ymd(monday(new Date()));if(st.wWeek===wk)return false;
+  st.wWeek=wk;st.weekly.forEach(function(w){w.done=false;});save();return true;
+}
+function renderBox(arr,lid,cid,suffix,k){
+  var dn=arr.filter(function(x){return x.done;}).length;
+  $(cid).textContent=arr.length?dn+'/'+arr.length+suffix:'';
+  var list=arr.map(function(x,i){return {x:x,i:i};}).sort(function(a,b){return (a.x.done-b.x.done)||(a.i-b.i);});
+  $(lid).innerHTML=list.map(function(o){var x=o.x;
+    return '<li class="task'+(x.done?' done':'')+'"><input type="checkbox" data-'+k+'chk="'+x.id+'"'+(x.done?' checked':'')+' aria-label="Făcut: '+esc(x.text)+'"><div><span class="t">'+esc(x.text)+'</span></div>'+
+      '<button class="x" data-'+k+'del="'+x.id+'" aria-label="Șterge task-ul">✕</button></li>';
+  }).join('')||'<li class="wempty">Lista e goală.</li>';
+}
+// Daily tasks: on today's list every day, before everything else; ticks count for today only.
+function ensureDaily(){
+  var t=ymd(new Date());if(st.dDate===t)return false;
+  st.dDate=t;st.daily.forEach(function(x){x.done=false;});save();return true;
+}
+function dRow(x){return '<li class="task'+(x.done?' done':'')+'"><input type="checkbox" data-dchk="'+x.id+'"'+(x.done?' checked':'')+' aria-label="Făcut: '+esc(x.text)+'"><div><span class="t wt">'+esc(x.text)+'</span><br><span class="mtag">↻ zilnic</span></div></li>';}
+function setDaily(id,done){var x=st.daily.find(function(y){return y.id===id;});if(x){x.done=done;save();render();}}
+function wRow(w){return '<li class="task"><input type="checkbox" data-wchk="'+w.id+'" aria-label="Făcut: '+esc(w.text)+'"><div><span class="t wt">'+esc(w.text)+'</span><br><span class="mtag">↻ săptămânal</span></div></li>';}
+function setWeekly(id,done){var w=st.weekly.find(function(x){return x.id===id;});if(w){w.done=done;save();render();}}
+function lastOcc(){var t=new Date(),w=(t.getDay()+6)%7,diff=(w-st.mDay+7)%7;return ymd(addDays(new Date(t.getFullYear(),t.getMonth(),t.getDate()),-diff));}
+// Every 7 days (on the chosen weekday) the first monthly task shows up in the week.
+function ensureMonthly(){
+  if(!st.monthly.length)return false;
+  var D=lastOcc();if(st.mLast&&st.mLast>=D)return false;
+  st.mLast=D;
+  var active=st.tasks.find(function(t){return t.mid&&!t.done;});
+  if(!active){var q=st.monthly[0];st.tasks.push({id:uid(),text:q.text,date:todayStr,done:false,order:maxOrder(todayStr)+1,mid:q.id});}
+  save();return true;
+}
+function moveMonthly(t,done){
+  var i=st.monthly.findIndex(function(q){return q.id===t.mid;});if(i<0)return;
+  if(done&&!t.mMoved){st.monthly.push(st.monthly.splice(i,1)[0]);t.mMoved=true;}
+  else if(!done&&t.mMoved){st.monthly.unshift(st.monthly.splice(i,1)[0]);t.mMoved=false;}
+}
+function renderMonthly(){
+  $('mDay').innerHTML=DAYS.map(function(d,i){return '<option value="'+i+'"'+(i===st.mDay?' selected':'')+'>'+d.toLowerCase()+'</option>';}).join('');
+  var active=st.tasks.find(function(t){return t.mid&&!t.done;});
+  $('mCnt').textContent=st.monthly.length?st.monthly.length+' în listă':'';
+  $('mq').innerHTML=st.monthly.map(function(q,i){
+    var b=active&&active.mid===q.id?'<span class="badge">în săptămână acum</span>':(i===0&&!active?'<span class="badge">următorul</span>':'');
+    return '<li><span>'+esc(q.text)+b+'</span><button data-mup="'+i+'" aria-label="Mută mai sus"'+(i===0?' disabled':'')+'>▲</button><button data-mdown="'+i+'" aria-label="Mută mai jos"'+(i===st.monthly.length-1?' disabled':'')+'>▼</button><button data-mdel="'+q.id+'" aria-label="Șterge task-ul lunar">✕</button></li>';
+  }).join('')||'<li style="display:block">Lista e goală.</li>';
+}
+function previewFor(ds){
+  if(!st.monthly.length||ds<=todayStr)return null;
+  if((parse(ds).getDay()+6)%7!==st.mDay)return null;
+  var k=0,d=addDays(parse(todayStr),1);
+  while(ymd(d)<=ds){if((d.getDay()+6)%7===st.mDay)k++;d=addDays(d,1);}
+  var off=st.tasks.some(function(t){return t.mid&&!t.done;})?1:0;
+  return st.monthly[(k-1+off)%st.monthly.length].text;
+}
+function render(){
+  renderBox(st.daily,'dl','dCnt',' făcute azi','d');renderBox(st.weekly,'wl','wCnt',' făcute','w');renderMonthly();
+  var days=$('days'),html='',total=0,done=0;
+  var end=addDays(weekStart,6);
+  $('range').textContent=pretty(weekStart)+' – '+pretty(end)+' '+end.getFullYear();
+  $('hideDone').checked=!!st.hideDone;
+  days.className=st.hideDone?'hide-done':'';
+  for(var i=0;i<7;i++){
+    var d=addDays(weekStart,i),ds=ymd(d);
+    var list=st.tasks.filter(function(t){return t.date===ds;}).sort(function(a,b){return (a.done-b.done)||(a.order-b.order);});
+    var dn=list.filter(function(t){return t.done;}).length;total+=list.length;done+=dn;
+    var isT=ds===todayStr,du=isT?st.daily.filter(function(x){return !x.done;}):[],dd=isT?st.daily.filter(function(x){return x.done;}):[];
+    var L=list.length+du.length+dd.length,D=dn+dd.length;
+    var cls='day'+(ds===todayStr?' today':'')+(ds<todayStr?' past':'');
+    html+='<section class="'+cls+'" id="d-'+ds+'"><div class="dh"><h2>'+DAYS[i]+'</h2><span class="date">'+pretty(d)+'</span>'+
+      (ds===todayStr?'<span class="tag">azi</span>':'')+(L?'<span class="cnt">'+D+'/'+L+'</span>':'')+'</div>';
+    var rows=list.map(function(t){
+      var txt=editing===t.id?'<input class="edit" data-edit="'+t.id+'" value="'+esc(t.text)+'" aria-label="Editează task-ul">':'<span class="t" data-id="'+t.id+'">'+esc(t.text)+'</span>';
+      var mv=t.from&&!t.done?'<br><span class="moved">mutat din '+dayName(t.from)+' '+pretty(parse(t.from))+(t.moves>1?' · amânat de '+t.moves+' ori':'')+'</span>':'';
+      var mt=t.mid?'<br><span class="mtag">↻ lunar</span>':(isRec(t)&&t.wd!==i?'<br><span class="mtag">↻ de '+DAYS[t.wd].toLowerCase()+'</span>':'');
+      var lk=t.locked?(!t.done&&ds<todayStr?'<br><span class="missed">🔒 rămas nefăcut</span>':'<br><span class="locked-tag">🔒 blocat pe '+DAYS[i].toLowerCase()+'</span>'):'';
+      return '<li class="task'+(t.done?' done':'')+'"><input type="checkbox" data-chk="'+t.id+'"'+(t.done?' checked':'')+' aria-label="Făcut: '+esc(t.text)+'"><div>'+txt+mt+mv+lk+'</div>'+
+        '<button class="lk" data-lock="'+t.id+'" aria-pressed="'+(!!t.locked)+'" aria-label="'+(t.locked?'Deblochează':'Blochează în ziua asta')+'" title="'+(t.locked?'Deblochează':'Blochează în ziua asta')+'">🔒</button>'+
+        '<button class="x" data-del="'+t.id+'" aria-label="Șterge task-ul">✕</button></li>';
+    });
+    // weekly tasks not done yet show up on today; tomorrow they are on tomorrow, until ticked
+    // daily tasks go first, before anything moved here from other days
+    var wN=0;
+    if(isT){var wp=st.weekly.filter(function(w){return !w.done;});wN=wp.length;
+      rows.splice.apply(rows,[list.length-dn,0].concat(wp.map(wRow),dd.map(dRow)));
+      rows=du.map(dRow).concat(rows);}
+    html+='<ul class="tasks">'+rows.join('');
+    var pv=previewFor(ds);
+    if(pv)html+='<li class="task preview"><span>↻</span><div><span class="t">'+esc(pv)+'</span><br><span class="mtag">↻ lunar · apare în ziua asta</span></div></li>';
+    html+='</ul>';
+    if(!L&&!pv&&!wN)html+='<p class="empty">Niciun task.</p>';
+    else if(st.hideDone&&L&&D===L&&!wN)html+='<p class="empty">Totul e bifat.</p>';
+    if(ds>=todayStr)html+='<form class="add" data-day="'+ds+'"><input placeholder="Task nou pentru '+DAYS[i].toLowerCase()+'" aria-label="Task nou pentru '+DAYS[i]+'"><button class="pri" type="submit">+</button></form>';
+    html+='</section>';
+  }
+  days.innerHTML=html;
+  var rec=st.tasks.filter(isRec),rd=rec.filter(function(t){return t.done;}).length;
+  $('weekCnt').textContent=rec.length?'Runda: '+rd+' din '+rec.length+' făcute':'';
+  var ed=document.querySelector('input.edit');if(ed){ed.focus();ed.setSelectionRange(ed.value.length,ed.value.length);}
+}
+
+$('days').addEventListener('submit',function(e){
+  e.preventDefault();var f=e.target,inp=f.querySelector('input'),v=inp.value.trim();if(!v)return;
+  var ds=f.dataset.day;var o=maxOrder(ds)+1;st.tasks.push({id:uid(),text:v,date:ds,done:false,order:o,wd:(parse(ds).getDay()+6)%7,ho:o});
+  save();render();var ni=document.querySelector('form[data-day="'+ds+'"] input');if(ni)ni.focus();
+});
+$('days').addEventListener('change',function(e){
+  var did=e.target.dataset.dchk;if(did){setDaily(did,e.target.checked);return;}
+  var wid=e.target.dataset.wchk;if(wid){setWeekly(wid,e.target.checked);return;}
+  var id=e.target.dataset.chk;if(!id)return;var t=st.tasks.find(function(x){return x.id===id;});
+  t.done=e.target.checked;if(t.mid)moveMonthly(t,t.done);
+  if(!t.arch&&!t.locked){
+    if(t.done){t.prev={date:t.date,order:t.order};t.date=todayStr;t.order=maxOrder(todayStr)+1;}
+    else if(t.prev){t.date=t.prev.date;t.order=t.prev.order;delete t.prev;rollover();}
+  }
+  checkCycle();save();render();
+});
+$('days').addEventListener('click',function(e){
+  var lock=e.target.closest('[data-lock]');
+  if(lock){var t=st.tasks.find(function(x){return x.id===lock.dataset.lock;});t.locked=!t.locked;
+    if(t.locked){delete t.prev;if(isRec(t)){t.wd=wdOf(t.date);t.ho=t.order;}}
+    else if(!t.done&&t.date<todayStr)rollover();
+    save();render();return;}
+  var del=e.target.dataset.del;
+  if(del){st.tasks=st.tasks.filter(function(x){return x.id!==del;});save();render();return;}
+  var id=e.target.dataset.id;if(id){editing=id;render();}
+});
+function finishEdit(inp,keep){
+  var t=st.tasks.find(function(x){return x.id===inp.dataset.edit;});editing=null;
+  if(t&&keep){var v=inp.value.trim();if(v)t.text=v;save();}render();
+}
+$('days').addEventListener('keydown',function(e){
+  if(!e.target.dataset.edit)return;
+  if(e.key==='Enter'){e.preventDefault();finishEdit(e.target,true);}
+  if(e.key==='Escape')finishEdit(e.target,false);
+});
+$('days').addEventListener('focusout',function(e){if(e.target.dataset.edit&&editing)finishEdit(e.target,true);});
+$('prev').addEventListener('click',function(){weekStart=addDays(weekStart,-7);render();});
+$('next').addEventListener('click',function(){weekStart=addDays(weekStart,7);render();});
+$('today').addEventListener('click',function(){weekStart=monday(new Date());render();var el=$('d-'+todayStr);if(el)el.scrollIntoView({block:'start',behavior:'smooth'});});
+$('undoReset').addEventListener('click',function(){if(!lastReset)return;st.tasks=JSON.parse(lastReset);lastReset=null;$('toast').classList.remove('show');save();render();});
+$('hideDone').addEventListener('change',function(e){st.hideDone=e.target.checked;save();render();});
+// check again when the day changes while the page stays open
+setInterval(function(){if(ensureMonthly()|ensureWeekly()|ensureDaily())render();if(ymd(new Date())!==todayStr||st.tasks.some(function(t){return !t.done&&!t.locked&&t.date<ymd(new Date());})){rollover();render();}},60000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&(rollover()|ensureMonthly()|ensureWeekly()|ensureDaily()))render();else if(!document.hidden&&ymd(new Date())!==todayStr){todayStr=ymd(new Date());render();}});
+$('mAdd').addEventListener('submit',function(e){e.preventDefault();var inp=e.target.querySelector('input'),v=inp.value.trim();if(!v)return;
+  st.monthly.push({id:uid(),text:v});inp.value='';ensureMonthly();save();render();$('mAdd').querySelector('input').focus();});
+$('mq').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var d=b.dataset;
+  if(d.mdel){st.monthly=st.monthly.filter(function(q){return q.id!==d.mdel;});}
+  if(d.mup){var i=+d.mup;st.monthly.splice(i-1,0,st.monthly.splice(i,1)[0]);}
+  if(d.mdown){var j=+d.mdown;st.monthly.splice(j+1,0,st.monthly.splice(j,1)[0]);}
+  save();render();});
+$('dAdd').addEventListener('submit',function(e){e.preventDefault();var inp=e.target.querySelector('input'),v=inp.value.trim();if(!v)return;
+  st.daily.push({id:uid(),text:v,done:false});inp.value='';save();render();inp.focus();});
+$('dl').addEventListener('change',function(e){var id=e.target.dataset.dchk;if(id)setDaily(id,e.target.checked);});
+$('dl').addEventListener('click',function(e){var b=e.target.closest('[data-ddel]');if(!b)return;
+  st.daily=st.daily.filter(function(x){return x.id!==b.dataset.ddel;});save();render();});
+$('daily').addEventListener('toggle',function(){if(st.dOpen!==$('daily').open){st.dOpen=$('daily').open;save();}});
+$('wAdd').addEventListener('submit',function(e){e.preventDefault();var inp=e.target.querySelector('input'),v=inp.value.trim();if(!v)return;
+  st.weekly.push({id:uid(),text:v,done:false});inp.value='';save();render();inp.focus();});
+$('wl').addEventListener('change',function(e){var id=e.target.dataset.wchk;if(id)setWeekly(id,e.target.checked);});
+$('wl').addEventListener('click',function(e){var b=e.target.closest('[data-wdel]');if(!b)return;
+  st.weekly=st.weekly.filter(function(x){return x.id!==b.dataset.wdel;});save();render();});
+$('weekly').addEventListener('toggle',function(){if(st.wOpen!==$('weekly').open){st.wOpen=$('weekly').open;save();}});
+$('mDay').addEventListener('change',function(e){st.mDay=+e.target.value;st.mLast=lastOcc();save();render();});
+rollover();ensureMonthly();ensureWeekly();ensureDaily();$('daily').open=!!st.dOpen;$('weekly').open=!!st.wOpen;render();
+var el=$('d-'+todayStr);if(el&&el.getBoundingClientRect().top>window.innerHeight)el.scrollIntoView({block:'start'});
+})();
+</script>
+<script>
+/* ---------- instalare ca aplicatie + actualizare automata ---------- */
+(function(){
+  if(!('serviceWorker' in navigator))return;
+  var bar=document.getElementById('upd'),waiting=null,applying=false,initiated=false;
+
+  function busy(){
+    var els=document.querySelectorAll('input');
+    for(var i=0;i<els.length;i++){
+      var el=els[i];
+      if(el.type==='checkbox')continue;
+      if((el.value||'').trim())return true;
+    }
+    return false;
+  }
+  function apply(){
+    if(applying||!waiting)return;
+    applying=true;initiated=true;
+    bar.textContent='Se actualizeaz\u0103\u2026';bar.hidden=false;
+    waiting.postMessage('skipWaiting');
+  }
+  function offer(sw){
+    waiting=sw;
+    if(!busy()){apply();return;}
+    bar.hidden=false;
+  }
+  bar.addEventListener('click',apply);
+
+  navigator.serviceWorker.addEventListener('controllerchange',function(){
+    if(initiated)location.reload();
+  });
+
+  navigator.serviceWorker.register('sw.js').then(function(reg){
+    if(reg.waiting&&navigator.serviceWorker.controller)offer(reg.waiting);
+    reg.addEventListener('updatefound',function(){
+      var sw=reg.installing;if(!sw)return;
+      sw.addEventListener('statechange',function(){
+        if(sw.state==='installed'&&navigator.serviceWorker.controller)offer(sw);
+      });
+    });
+    /* cauta versiune noua cand deschizi aplicatia si din ora in ora */
+    document.addEventListener('visibilitychange',function(){
+      if(!document.hidden)reg.update().catch(function(){});
+    });
+    setInterval(function(){reg.update().catch(function(){});},60*60*1000);
+  }).catch(function(){});
+})();
+</script>
+</body>
+</html>
