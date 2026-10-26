@@ -4,6 +4,8 @@ Aplicație web instalabilă (PWA) pentru task-uri care se repetă săptămânal.
 Ce bifezi trece la finalul zilei; ce nu bifezi se mută singur pe ziua următoare.
 Când ai bifat tot, lista se reia de la capăt, fiecare task pe ziua lui.
 
+**Link:** https://alinamadalina.github.io/Saptamana-mea/
+
 ## Instalare pe telefon
 
 1. Deschide linkul aplicației în **Chrome** (Android) sau **Safari** (iPhone).
