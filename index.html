@@ -108,6 +108,9 @@ ul.wl .wempty{color:var(--muted);font-size:.9rem;padding:4px 0}
 .bar i{display:block;height:100%;background:var(--accent)}
 .readinfo{margin:0 0 8px;font-size:.95rem}
 .readinfo b{color:var(--accent)}
+.pagenow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 2px 8px;font-size:.92rem;color:var(--muted)}
+.pagenow label{display:flex;align-items:center;gap:8px}
+.pagenow input{width:72px;text-align:center;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:6px 8px}
 </style>
 </head>
 <body>
@@ -389,6 +392,7 @@ function render(){
     var isT=ds===todayStr,du=isT?st.daily.filter(function(x){return !x.done;}):[],dd=isT?st.daily.filter(function(x){return x.done;}):[];
     var L=list.length+du.length+dd.length,D=dn+dd.length;
     var cls='day'+(ds===todayStr?' today':'')+(ds<todayStr?' past':'');
+    if(isT&&st.readOn)html+=pageNowBox();
     html+='<section class="'+cls+'" id="d-'+ds+'"><div class="dh"><h2>'+DAYS[i]+'</h2><span class="date">'+pretty(d)+'</span>'+
       (ds===todayStr?'<span class="tag">azi</span>':'')+(L?'<span class="cnt">'+D+'/'+L+'</span>':'')+'</div>';
     var rows=list.map(function(t){
@@ -531,6 +535,7 @@ function renderRead(){
     h+='<div class="acts" style="padding:0"><button type="button" id="readNew">Am început altă carte</button></div>';
   }
   $('readInfo').innerHTML=h;
+  syncPageNow();
 }
 $('readTotal').addEventListener('input',function(e){
   st.readTotal=e.target.value.trim();save();renderRead();
@@ -545,6 +550,37 @@ $('readInfo').addEventListener('click',function(e){
 });
 $('readBox').addEventListener('toggle',function(){
   if(st.readOpen!==$('readBox').open){st.readOpen=$('readBox').open;save();}
+});
+/* ---- la ce pagină sunt ---- */
+/* Căsuța de deasupra zilei de azi. Scrii pagina la care ai ajuns, iar socoteala cărții
+   se reface din ea: ce ai citit de când ții evidența = pagina de acum − pagina de start.
+   Nu redesenăm zilele cât scrii, ca să nu sară cursorul din căsuță. */
+function pageNowAt(){
+  return (parseInt(st.readFrom,10)||0)+(st.readDone||0);
+}
+function pageNowInfo(){
+  var tot=parseInt(st.readTotal,10)||0;
+  if(!tot)return '';
+  var ramase=Math.max(0,tot-pageNowAt());
+  return 'din '+tot+(ramase?' · mai ai '+pagini(ramase):' · gata');
+}
+function syncPageNow(){
+  var i=$('pageNow');
+  if(i&&i!==document.activeElement)i.value=pageNowAt();
+  var el=$('pageNowInfo');if(el)el.textContent=pageNowInfo();
+}
+function pageNowBox(){
+  return '<div class="pagenow"><label>Sunt la pagina <input type="text" inputmode="numeric" id="pageNow"'+
+    ' value="'+pageNowAt()+'" aria-label="La ce pagină sunt"></label>'+
+    '<span id="pageNowInfo">'+pageNowInfo()+'</span></div>';
+}
+$('days').addEventListener('input',function(e){
+  if(e.target.id!=='pageNow')return;
+  var from=parseInt(st.readFrom,10)||0,v=parseInt(e.target.value,10);
+  st.readDone=isNaN(v)?0:Math.max(0,v-from);
+  save();
+  var el=$('pageNowInfo');if(el)el.textContent=pageNowInfo();
+  renderRead();
 });
 rollover();ensureMonthly();ensureWeekly();ensureDaily();$('daily').open=!!st.dOpen;$('weekly').open=!!st.wOpen;$('readBox').open=!!st.readOpen;render();
 var el=$('d-'+todayStr);if(el&&el.getBoundingClientRect().top>window.innerHeight)el.scrollIntoView({block:'start'});

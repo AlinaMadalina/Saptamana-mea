@@ -57,6 +57,15 @@ Dacă ai început cartea înainte, scrie în **De la ce pagină pornești**: de 
 socotește mai departe. Pagina la care ești acum = pagina de start + paginile bifate de
 atunci. Dacă pagina de start trece de ultima, ți-o spune.
 
+Deasupra zilei de azi e căsuța **Sunt la pagina**: scrii direct pagina la care ai ajuns,
+fără să cobori la secțiunea Cartea. Lângă ea vezi din câte e și cât ți-a mai rămas.
+Scrisul în ea reface socoteala (`readDone` = pagina scrisă − pagina de start), iar bifarea
+task-ului de citit o mută mai departe cu paginile zilei. Apare doar în săptămâna curentă.
+
+Căsuța trăiește în lista de zile, care se redesenează des; de-aceea scrisul în ea nu
+cheamă `render()`, ci doar `save()` și actualizarea textului de alături, iar `renderRead()`
+o aduce la zi prin `syncPageNow()` când schimbi cartea din secțiunea de jos.
+
 Paginile citite se țin într-un contor propriu (`st.readDone`), nu se numără din task-uri:
 cele bifate din zilele trecute se șterg la trecerea zilei, deci istoricul s-ar pierde.
 Contorul crește la bifare și scade la debifare, fără să poată trece sub zero.
