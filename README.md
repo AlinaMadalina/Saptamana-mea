@@ -26,17 +26,27 @@ Când ai bifat tot, lista se reia de la capăt, fiecare task pe ziua lui.
 Când toate task-urile de pe zile sunt bifate, runda se reia: fiecare task se întoarce
 pe ziua lui din săptămâna următoare. Resetarea se poate anula din bara care apare jos.
 
-### Numere care urmează ziua din lună
+### Cititul: câte un task pe zi, care se adună
 
-Într-un task zilnic poți scrie:
+În fiecare zi apare un task **Citit**, cu numărul de pagini egal cu ziua din lună: pe 27
+„Citit 27 de pagini”, pe 28 „28 de pagini”, iar pe întâi ale lunii o ia de la „o pagină”.
 
-- `{zi}` → numărul zilei din lună (pe 27 devine `27`)
-- `{pagini}` → `o pagină`, `19 pagini`, `20 de pagini` — cu acordul corect
+Dacă nu îl bifezi, **rămâne și se adună** peste cel de a doua zi. Pe 28 ai amândouă —
+unul de 26 de pagini și unul de 27 — iar când sunt mai multe apare și totalul de citit.
+Fiecare își păstrează numărul zilei lui: cel rămas din 27 scrie tot 27, nu 28.
 
-Numărul nu se ține minte nicăieri: se calculează din dată la fiecare afișare. De-asta
-crește singur în fiecare zi și o ia de la 1 pe întâi ale lunii, fără nimic de resetat.
+Cum e făcut:
 
-Aplicația adaugă o singură dată task-ul **Citit {pagini}**. Dacă îl ștergi, nu revine.
+- fiecare intrare e un task obișnuit cu `t.rd` = ziua pentru care e; numărul de pagini se
+  calculează din `t.rd`, nu din ziua de azi;
+- fiind task-uri obișnuite, se reportează singure prin `rollover()` și se strâng în lista
+  de azi exact ca orice restanță, cu eticheta „mutat din …”;
+- `t.rd` le ține în afara rundei săptămânale (`isRec`), deci nu intră la socoteala
+  „Runda: x din y” și nu blochează reluarea listei;
+- cele bifate din zilele trecute se șterg la trecerea zilei, ca să nu se adune degeaba.
+
+Într-un task zilnic obișnuit merg și șabloanele `{zi}` (numărul zilei) și `{pagini}`
+(„20 de pagini”, cu acordul corect).
 
 ## Ordinea pe ecran
 

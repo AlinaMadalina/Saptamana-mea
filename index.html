@@ -101,6 +101,8 @@ ul.wl .wempty{color:var(--muted);font-size:.9rem;padding:4px 0}
 .syncacts{display:flex;gap:8px;margin:4px 0 2px}
 .syncacts[hidden]{display:none}
 .pastsep{margin:18px 2px 8px;font-size:.85rem;color:var(--muted);text-align:center}
+.readtot{color:var(--muted);font-size:.9rem}
+.readtot b{color:var(--ink)}
 </style>
 </head>
 <body>
@@ -201,7 +203,7 @@ var todayStr=ymd(new Date()),weekStart=monday(new Date()),editing=null,lastReset
 // Tasks already done in previous weeks stay there as history (arch) and don't repeat.
 (function(){var wk0=ymd(weekStart),ch=false;
   st.tasks.forEach(function(t){
-    if(t.mid||t.arch||t.wd!==undefined)return;ch=true;
+    if(t.mid||t.rd||t.arch||t.wd!==undefined)return;ch=true;
     if(t.done&&t.date<wk0){t.arch=true;return;}
     t.wd=(parse(t.from||t.date).getDay()+6)%7;t.ho=t.order;
   });
@@ -213,7 +215,7 @@ var todayStr=ymd(new Date()),weekStart=monday(new Date()),editing=null,lastReset
   });
   if(ch)try{localStorage.setItem(KEY,JSON.stringify(st));}catch(e){}
 })();
-function isRec(t){return t.wd!==undefined&&!t.mid&&!t.arch;}
+function isRec(t){return t.wd!==undefined&&!t.mid&&!t.rd&&!t.arch;}
 function nextWd(wd){var d=addDays(parse(todayStr),1);while((d.getDay()+6)%7!==wd)d=addDays(d,1);return ymd(d);}
 // When every weekly task is done (a missed locked one counts too), they all start over,
 // each on the next occurrence of its own weekday.
@@ -272,22 +274,48 @@ function dynText(t){
   var n=new Date().getDate();
   return String(t).replace(/\{zi\}/g,n).replace(/\{pagini\}/g,pagini(n));
 }
-// Task-ul de citit se adaugă o singură dată. Dacă îl ștergi, nu mai revine.
-function ensureReading(){
-  if(st.readSeeded)return false;
-  st.readSeeded=true;
-  if(!st.daily)st.daily=[];
-  if(!st.daily.some(function(x){return /\{pagini\}|\{zi\}/.test(x.text);}))
-    st.daily.unshift({id:uid(),text:'Citit {pagini}',done:false});
+/* Cititul: câte un task pe zi, cu t.rd = ziua pentru care e. Numărul de pagini se ia
+   din t.rd, nu din ziua de azi, ca unul rămas din 27 să scrie tot 27 chiar dacă îl vezi
+   pe 28. Fiind task-uri obișnuite, se reportează singure prin rollover() și se adună în
+   lista de azi până le bifezi, exact ca restul restanțelor. Au t.rd, deci isRec() le
+   lasă pe dinafară: nu intră în runda săptămânală și n-o blochează. */
+function readLabel(t){return 'Citit '+pagini(parse(t.rd).getDate());}
+function readOpen(){return st.tasks.filter(function(t){return t.rd&&!t.done;});}
+function readTotal(){
+  var n=0;readOpen().forEach(function(t){n+=parse(t.rd).getDate();});
+  return n;
+}
+/* Trecerea de la varianta veche, in care cititul era un singur task zilnic. */
+function migrateRead(){
+  if(st.readV2)return false;
+  st.readV2=true;
+  st.readOn=true;
+  if(st.daily&&st.daily.length)
+    st.daily=st.daily.filter(function(x){return x.text!=='Citit {pagini}';});
   save();return true;
+}
+function ensureRead(){
+  if(!st.readOn)return false;
+  var t=ymd(new Date()),ch=false;
+  // cele bifate din zilele trecute nu mai au ce cauta in lista
+  var n0=st.tasks.length;
+  st.tasks=st.tasks.filter(function(x){return !(x.rd&&x.done&&x.date<t);});
+  if(st.tasks.length!==n0)ch=true;
+  if(st.readLast!==t){
+    st.readLast=t;ch=true;
+    if(!st.tasks.some(function(x){return x.rd===t;}))
+      st.tasks.push({id:uid(),text:'Citit',rd:t,date:t,done:false,order:maxOrder(t)+1});
+  }
+  if(ch)save();
+  return ch;
 }
 // Daily tasks: on today's list every day, before everything else; ticks count for today only.
 function ensureDaily(){
-  var ch=ensureReading();
+  var ch=migrateRead();
+  if(ensureRead())ch=true;
   var t=ymd(new Date());if(st.dDate===t)return ch;
   st.dDate=t;st.daily.forEach(function(x){x.done=false;});save();return true;
 }
-
 function dRow(x){return '<li class="task'+(x.done?' done':'')+'"><input type="checkbox" data-dchk="'+x.id+'"'+(x.done?' checked':'')+' aria-label="Făcut: '+esc(dynText(x.text))+'"><div><span class="t wt">'+esc(dynText(x.text))+'</span><br><span class="mtag">↻ zilnic</span></div></li>';}
 function setDaily(id,done){var x=st.daily.find(function(y){return y.id===id;});if(x){x.done=done;save();render();}}
 function wRow(w){return '<li class="task"><input type="checkbox" data-wchk="'+w.id+'" aria-label="Făcut: '+esc(w.text)+'"><div><span class="t wt">'+esc(w.text)+'</span><br><span class="mtag">↻ săptămânal</span></div></li>';}
@@ -347,11 +375,11 @@ function render(){
     html+='<section class="'+cls+'" id="d-'+ds+'"><div class="dh"><h2>'+DAYS[i]+'</h2><span class="date">'+pretty(d)+'</span>'+
       (ds===todayStr?'<span class="tag">azi</span>':'')+(L?'<span class="cnt">'+D+'/'+L+'</span>':'')+'</div>';
     var rows=list.map(function(t){
-      var txt=editing===t.id?'<input class="edit" data-edit="'+t.id+'" value="'+esc(t.text)+'" aria-label="Editează task-ul">':'<span class="t" data-id="'+t.id+'">'+esc(t.text)+'</span>';
+      var lbl=t.rd?readLabel(t):t.text;var txt=(editing===t.id&&!t.rd)?'<input class="edit" data-edit="'+t.id+'" value="'+esc(t.text)+'" aria-label="Editează task-ul">':'<span class="t"'+(t.rd?'':' data-id="'+t.id+'"')+'>'+esc(lbl)+'</span>';
       var mv=t.from&&!t.done?'<br><span class="moved">mutat din '+dayName(t.from)+' '+pretty(parse(t.from))+(t.moves>1?' · amânat de '+t.moves+' ori':'')+'</span>':'';
-      var mt=t.mid?'<br><span class="mtag">↻ lunar</span>':(isRec(t)&&t.wd!==i?'<br><span class="mtag">↻ de '+DAYS[t.wd].toLowerCase()+'</span>':'');
+      var mt=t.rd?'<br><span class="mtag">↻ citit</span>':t.mid?'<br><span class="mtag">↻ lunar</span>':(isRec(t)&&t.wd!==i?'<br><span class="mtag">↻ de '+DAYS[t.wd].toLowerCase()+'</span>':'');
       var lk=t.locked?(!t.done&&ds<todayStr?'<br><span class="missed">🔒 rămas nefăcut</span>':'<br><span class="locked-tag">🔒 blocat pe '+DAYS[i].toLowerCase()+'</span>'):'';
-      return '<li class="task'+(t.done?' done':'')+'"><input type="checkbox" data-chk="'+t.id+'"'+(t.done?' checked':'')+' aria-label="Făcut: '+esc(t.text)+'"><div>'+txt+mt+mv+lk+'</div>'+
+      return '<li class="task'+(t.done?' done':'')+'"><input type="checkbox" data-chk="'+t.id+'"'+(t.done?' checked':'')+' aria-label="Făcut: '+esc(lbl)+'"><div>'+txt+mt+mv+lk+'</div>'+
         '<button class="lk" data-lock="'+t.id+'" aria-pressed="'+(!!t.locked)+'" aria-label="'+(t.locked?'Deblochează':'Blochează în ziua asta')+'" title="'+(t.locked?'Deblochează':'Blochează în ziua asta')+'">🔒</button>'+
         '<button class="x" data-del="'+t.id+'" aria-label="Șterge task-ul">✕</button></li>';
     });
@@ -362,6 +390,7 @@ function render(){
       rows.splice.apply(rows,[list.length-dn,0].concat(wp.map(wRow),dd.map(dRow)));
       rows=du.map(dRow).concat(rows);}
     html+='<ul class="tasks">'+rows.join('');
+    if(isT&&readOpen().length>1)html+='<li class="task readtot"><span></span><div>&#206;n total <b>'+pagini(readTotal())+'</b> de citit</div></li>';
     var pv=previewFor(ds);
     if(pv)html+='<li class="task preview"><span>↻</span><div><span class="t">'+esc(pv)+'</span><br><span class="mtag">↻ lunar · apare în ziua asta</span></div></li>';
     html+='</ul>';
