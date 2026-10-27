@@ -155,6 +155,7 @@ ul.wl .wempty{color:var(--muted);font-size:.9rem;padding:4px 0}
     <div class="mbody">
       <p class="hint">&#206;n fiecare zi ai de citit at&#226;tea pagini c&#226;t e ziua din lun&#259;. Ce nu bifezi se adun&#259;.</p>
       <label class="mset">C&#226;te pagini are cartea <input type="text" inputmode="numeric" id="readTotal" placeholder="ex: 320"></label>
+      <label class="mset">De la ce pagin&#259; porne&#537;ti <input type="text" inputmode="numeric" id="readFrom" placeholder="ex: 120"></label>
       <div id="readInfo"></div>
     </div>
   </details>
@@ -280,8 +281,10 @@ function renderBox(arr,lid,cid,suffix,k){
 // Numere care urmează ziua din lună: pe 27 scrie 27, pe 28 scrie 28, iar pe 1 o ia de la capăt.
 // Nu se ține minte nimic — se calculează din dată, deci creșterea și resetul lunar vin de la sine.
 function pagini(n){
+  if(n===0)return 'nicio pagină';
   if(n===1)return 'o pagină';
-  return n+(n%100>=20?' de ':' ')+'pagini';   // 19 pagini, dar 20 de pagini
+  var r=n%100;
+  return n+((r===0||r>=20)?' de ':' ')+'pagini';   // 19 pagini, dar 20 si 200 de pagini
 }
 function dynText(t){
   var n=new Date().getDate();
@@ -500,21 +503,28 @@ function readFinish(ramase){
   return null;
 }
 function renderRead(){
-  var tot=parseInt(st.readTotal,10)||0,done=st.readDone||0;
-  var inp=$('readTotal');
-  if(inp&&inp!==document.activeElement)inp.value=st.readTotal||'';
-  $('readCnt').textContent=tot?done+' din '+tot+' pagini':(done?done+' pagini citite':'');
+  /* de unde ai pornit + cât ai bifat de atunci = la ce pagină ești acum */
+  var tot=parseInt(st.readTotal,10)||0,from=parseInt(st.readFrom,10)||0,done=st.readDone||0;
+  var acum=from+done;
+  ['readTotal','readFrom'].forEach(function(id){
+    var el=$(id);
+    if(el&&el!==document.activeElement)el.value=(id==='readTotal'?st.readTotal:st.readFrom)||'';
+  });
+  $('readCnt').textContent=tot?'pagina '+acum+' din '+tot:(done?pagini(done)+' citite':'');
   var h='';
   if(!tot){
     h='<p class="hint">Scrie câte pagini are cartea și îți spun cât ți-a mai rămas și cam când o termini.'+
-      (done?' Până acum ai citit '+pagini(done)+'.':'')+'</p>';
+      (done?' De când ții socoteala aici ai citit '+pagini(done)+'.':'')+'</p>';
   }else{
-    var ramase=Math.max(0,tot-done),pct=Math.min(100,Math.round(done/tot*100));
+    var ramase=Math.max(0,tot-acum),pct=Math.min(100,Math.round(acum/tot*100));
     h='<div class="bar"><i style="width:'+pct+'%"></i></div>';
-    if(ramase===0){
+    if(acum>tot){
+      h+='<p class="readinfo">Ai trecut de ultima pagină: '+acum+' din '+tot+'. Verifică de unde ai pornit.</p>';
+    }else if(ramase===0){
       h+='<p class="readinfo"><b>Ai terminat cartea.</b> '+pagini(tot)+', toate citite.</p>';
     }else{
-      h+='<p class="readinfo">Ai citit <b>'+done+'</b> din '+tot+' pagini. Mai ai <b>'+pagini(ramase)+'</b>.</p>';
+      h+='<p class="readinfo">Ești la <b>pagina '+acum+'</b> din '+tot+'. Mai ai <b>'+pagini(ramase)+'</b>.</p>';
+      if(from)h+='<p class="hint">Ai pornit de la pagina '+from+(done?', iar de atunci ai bifat '+pagini(done):'')+'.</p>';
       var zi=readFinish(ramase);
       if(zi)h+='<p class="hint">Dacă bifezi în fiecare zi, termini pe <b>'+pretty(zi)+'</b>.</p>';
     }
@@ -525,9 +535,12 @@ function renderRead(){
 $('readTotal').addEventListener('input',function(e){
   st.readTotal=e.target.value.trim();save();renderRead();
 });
+$('readFrom').addEventListener('input',function(e){
+  st.readFrom=e.target.value.trim();save();renderRead();
+});
 $('readInfo').addEventListener('click',function(e){
   if(e.target.id!=='readNew')return;
-  st.readDone=0;st.readTotal='';save();renderRead();
+  st.readDone=0;st.readTotal='';st.readFrom='';save();renderRead();
   var i=$('readTotal');if(i){i.value='';i.focus();}
 });
 $('readBox').addEventListener('toggle',function(){

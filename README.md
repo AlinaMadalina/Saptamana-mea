@@ -53,11 +53,15 @@ Secțiunea **📖 Cartea** ține socoteala: scrii câte pagini are cartea și î
 citit, cât ți-a mai rămas și în ce zi termini dacă bifezi în fiecare zi. Data se află
 adunând, zi după zi, câte pagini dă fiecare — adică data ei din lună.
 
+Dacă ai început cartea înainte, scrie în **De la ce pagină pornești**: de acolo se
+socotește mai departe. Pagina la care ești acum = pagina de start + paginile bifate de
+atunci. Dacă pagina de start trece de ultima, ți-o spune.
+
 Paginile citite se țin într-un contor propriu (`st.readDone`), nu se numără din task-uri:
 cele bifate din zilele trecute se șterg la trecerea zilei, deci istoricul s-ar pierde.
 Contorul crește la bifare și scade la debifare, fără să poată trece sub zero.
 
-**Am început altă carte** aduce contorul la zero și golește numărul de pagini. Nu umblă la
+**Am început altă carte** aduce contorul la zero și golește numărul de pagini și pagina de start. Nu umblă la
 bifele existente, deci dacă debifezi apoi un task bifat înainte de resetare, contorul nu
 scade sub zero — cel mult numără puțin în minus.
 („20 de pagini”, cu acordul corect).
