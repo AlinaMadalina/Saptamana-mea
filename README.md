@@ -26,6 +26,18 @@ Când ai bifat tot, lista se reia de la capăt, fiecare task pe ziua lui.
 Când toate task-urile de pe zile sunt bifate, runda se reia: fiecare task se întoarce
 pe ziua lui din săptămâna următoare. Resetarea se poate anula din bara care apare jos.
 
+### Numere care urmează ziua din lună
+
+Într-un task zilnic poți scrie:
+
+- `{zi}` → numărul zilei din lună (pe 27 devine `27`)
+- `{pagini}` → `o pagină`, `19 pagini`, `20 de pagini` — cu acordul corect
+
+Numărul nu se ține minte nicăieri: se calculează din dată la fiecare afișare. De-asta
+crește singur în fiecare zi și o ia de la 1 pe întâi ale lunii, fără nimic de resetat.
+
+Aplicația adaugă o singură dată task-ul **Citit {pagini}**. Dacă îl ștergi, nu revine.
+
 ## Ordinea pe ecran
 
 Listele de task-uri care se repetă (zilnice, săptămânale, lunare) stau **sub** zile, nu

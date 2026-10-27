@@ -121,7 +121,7 @@ ul.wl .wempty{color:var(--muted);font-size:.9rem;padding:4px 0}
   <details class="box" id="daily">
     <summary><h2>↻ Task-uri zilnice</h2><span class="cnt" id="dCnt"></span></summary>
     <div class="mbody">
-      <p class="hint">Apar în fiecare zi, primele în lista de azi, înaintea task-urilor mutate de pe alte zile. Când le bifezi, trec la final, ca orice task făcut. A doua zi apar iar nebifate.</p>
+      <p class="hint">Apar în fiecare zi, primele în lista de azi, înaintea task-urilor mutate de pe alte zile. Când le bifezi, trec la final, ca orice task făcut. A doua zi apar iar nebifate.<br>Po&#539;i pune un num&#259;r care urmeaz&#259; ziua din lun&#259;: scrie <b>{zi}</b> pentru num&#259;rul zilei, sau <b>{pagini}</b> pentru &#8222;27 de pagini&#8221;. Pe 1 ale lunii o ia de la cap&#259;t.</p>
       <ul class="wl" id="dl"></ul>
       <form class="add" id="dAdd" style="padding:10px 0 0"><input placeholder="Task zilnic nou" aria-label="Task zilnic nou"><button class="pri" type="submit">+</button></form>
     </div>
@@ -258,16 +258,37 @@ function renderBox(arr,lid,cid,suffix,k){
   $(cid).textContent=arr.length?dn+'/'+arr.length+suffix:'';
   var list=arr.map(function(x,i){return {x:x,i:i};}).sort(function(a,b){return (a.x.done-b.x.done)||(a.i-b.i);});
   $(lid).innerHTML=list.map(function(o){var x=o.x;
-    return '<li class="task'+(x.done?' done':'')+'"><input type="checkbox" data-'+k+'chk="'+x.id+'"'+(x.done?' checked':'')+' aria-label="Făcut: '+esc(x.text)+'"><div><span class="t">'+esc(x.text)+'</span></div>'+
+    return '<li class="task'+(x.done?' done':'')+'"><input type="checkbox" data-'+k+'chk="'+x.id+'"'+(x.done?' checked':'')+' aria-label="Făcut: '+esc(dynText(x.text))+'"><div><span class="t">'+esc(dynText(x.text))+'</span></div>'+
       '<button class="x" data-'+k+'del="'+x.id+'" aria-label="Șterge task-ul">✕</button></li>';
   }).join('')||'<li class="wempty">Lista e goală.</li>';
 }
+// Numere care urmează ziua din lună: pe 27 scrie 27, pe 28 scrie 28, iar pe 1 o ia de la capăt.
+// Nu se ține minte nimic — se calculează din dată, deci creșterea și resetul lunar vin de la sine.
+function pagini(n){
+  if(n===1)return 'o pagină';
+  return n+(n%100>=20?' de ':' ')+'pagini';   // 19 pagini, dar 20 de pagini
+}
+function dynText(t){
+  var n=new Date().getDate();
+  return String(t).replace(/\{zi\}/g,n).replace(/\{pagini\}/g,pagini(n));
+}
+// Task-ul de citit se adaugă o singură dată. Dacă îl ștergi, nu mai revine.
+function ensureReading(){
+  if(st.readSeeded)return false;
+  st.readSeeded=true;
+  if(!st.daily)st.daily=[];
+  if(!st.daily.some(function(x){return /\{pagini\}|\{zi\}/.test(x.text);}))
+    st.daily.unshift({id:uid(),text:'Citit {pagini}',done:false});
+  save();return true;
+}
 // Daily tasks: on today's list every day, before everything else; ticks count for today only.
 function ensureDaily(){
-  var t=ymd(new Date());if(st.dDate===t)return false;
+  var ch=ensureReading();
+  var t=ymd(new Date());if(st.dDate===t)return ch;
   st.dDate=t;st.daily.forEach(function(x){x.done=false;});save();return true;
 }
-function dRow(x){return '<li class="task'+(x.done?' done':'')+'"><input type="checkbox" data-dchk="'+x.id+'"'+(x.done?' checked':'')+' aria-label="Făcut: '+esc(x.text)+'"><div><span class="t wt">'+esc(x.text)+'</span><br><span class="mtag">↻ zilnic</span></div></li>';}
+
+function dRow(x){return '<li class="task'+(x.done?' done':'')+'"><input type="checkbox" data-dchk="'+x.id+'"'+(x.done?' checked':'')+' aria-label="Făcut: '+esc(dynText(x.text))+'"><div><span class="t wt">'+esc(dynText(x.text))+'</span><br><span class="mtag">↻ zilnic</span></div></li>';}
 function setDaily(id,done){var x=st.daily.find(function(y){return y.id===id;});if(x){x.done=done;save();render();}}
 function wRow(w){return '<li class="task"><input type="checkbox" data-wchk="'+w.id+'" aria-label="Făcut: '+esc(w.text)+'"><div><span class="t wt">'+esc(w.text)+'</span><br><span class="mtag">↻ săptămânal</span></div></li>';}
 function setWeekly(id,done){var w=st.weekly.find(function(x){return x.id===id;});if(w){w.done=done;save();render();}}
