@@ -47,24 +47,16 @@ Cum e făcut:
 
 Într-un task zilnic obișnuit merg și șabloanele `{zi}` (numărul zilei) și `{pagini}`
 
-#### Cartea
+#### Cărțile mele
 
-Secțiunea **📖 Cartea** ține socoteala: scrii câte pagini are cartea și îți spune cât ai
-citit, cât ți-a mai rămas și în ce zi termini dacă bifezi în fiecare zi. Data se află
-adunând, zi după zi, câte pagini dă fiecare — adică data ei din lună.
+Pui cărțile în ordinea în care vrei să le citești, fiecare cu numele și câte pagini are.
+Toate la rând formează o singură numărătoare: pagina 1 a cărții a doua vine imediat după
+ultima pagină a primei. `st.readPage` e poziția în numărătoarea asta, iar `bookAt()` o
+traduce înapoi în „cartea X, pagina Y”. Așa planul rămâne un lanț simplu, indiferent câte
+cărți ai pus, iar o zi poate să termine o carte și să înceapă următoarea — rândul din plan
+le arată pe amândouă.
 
-Dacă ai început cartea înainte, scrie în **De la ce pagină pornești**: de acolo se
-socotește mai departe. Pagina la care ești acum = pagina de start + paginile bifate de
-atunci. Dacă pagina de start trece de ultima, ți-o spune.
-
-Deasupra zilei de azi e căsuța **Sunt la pagina**: scrii direct pagina la care ai ajuns,
-fără să cobori la secțiunea Cartea. Lângă ea vezi din câte e și cât ți-a mai rămas.
-Scrisul în ea reface socoteala (`readDone` = pagina scrisă − pagina de start), iar bifarea
-task-ului de citit o mută mai departe cu paginile zilei. Apare doar în săptămâna curentă.
-
-Căsuța trăiește în lista de zile, care se redesenează des; de-aceea scrisul în ea nu
-cheamă `render()`, ci doar `save()` și actualizarea textului de alături, iar `renderRead()`
-o aduce la zi prin `syncPageNow()` când schimbi cartea din secțiunea de jos.
+Dacă ai început prima carte, scrie în **În prima carte sunt deja la pagina**.
 
 #### Slider pe fiecare zi
 
@@ -95,15 +87,15 @@ scade sub zero — cel mult numără puțin în minus.
 
 #### Planul de citit
 
-Secțiunea **📅 Planul de citit**, la finalul paginii, arată zi cu zi: de la ce pagină
-începi, câte pagini ai de citit și până la ce pagină ajungi. Pagina la care ajungi azi e
-startul de mâine, și tot așa până se termină cartea. Ziua de azi e marcată.
+Secțiunea **📅 Planul de citit**, la finalul paginii, arată zi cu zi: câte pagini ai de
+citit și din ce carte. Unde ajungi azi e de unde începi mâine. Ziua de azi e marcată.
 
-E o socoteală de sine stătătoare, pornită din pagina de start: **nu se uită la ce ai
-bifat** și nu atinge zilele. Apare doar dacă ai scris câte pagini are cartea, pentru că
-altfel n-are unde să se oprească. Ultima zi se taie exact la ultima pagină, deci poate
-cere mai puțin decât numărul zilei.
-(„20 de pagini”, cu acordul corect).
+Planul merge **până pe 31 decembrie**. Dacă până atunci nu încap toate cărțile, îți spune
+câte pagini rămân. Nu e nimic de resetat la anul: planul se calculează din data de azi, așa
+că pe 1 ianuarie se reface singur, de la capăt, cu ce a mai rămas de citit.
+
+Zilele care au deja task își păstrează intervalul fixat; restul se proiectează înainte.
+Ultima zi se taie exact la ultima pagină, deci poate cere mai puțin decât numărul zilei.
 
 ## Ordinea pe ecran
 

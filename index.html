@@ -123,6 +123,20 @@ ul.wl .wempty{color:var(--muted);font-size:.9rem;padding:4px 0}
 .pslide input[type=range]{flex:1;min-width:120px;accent-color:var(--accent);height:22px}
 .pslide-l{font-size:.78rem;color:var(--muted);white-space:nowrap}
 .pslide-l b{color:var(--accent)}
+.booktab{width:100%;border-collapse:collapse;margin-top:8px;font-size:.92rem}
+.booktab th,.booktab td{text-align:left;padding:4px 3px;border-bottom:1px solid var(--line)}
+.booktab thead th{font-size:.78rem;font-weight:400;color:var(--muted)}
+.booktab td:nth-child(2){width:66px}
+.booktab td:nth-child(3){width:32px}
+.booktab input{width:100%;font:inherit;font-size:.9rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:5px 7px}
+.booktab td:nth-child(2) input{text-align:center}
+.booktab button{border:0;background:transparent;color:var(--muted);padding:2px 6px}
+.bookadd{display:flex;gap:6px;margin-top:8px}
+.bookadd input[name=nume]{flex:1;min-width:0}
+.bookadd input[name=pag]{width:66px;text-align:center}
+.bookadd input{font:inherit;font-size:.9rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:7px 9px}
+.bookadd button{padding:7px 14px}
+.plansp{width:auto;color:var(--ink)}
 </style>
 </head>
 <body>
@@ -166,23 +180,30 @@ ul.wl .wempty{color:var(--muted);font-size:.9rem;padding:4px 0}
     </div>
   </details>
   <details class="box" id="readBox">
-    <summary><h2>&#128214; Cartea</h2><span class="cnt" id="readCnt"></span></summary>
+    <summary><h2>&#128218; C&#259;r&#539;ile mele</h2><span class="cnt" id="readCnt"></span></summary>
     <div class="mbody">
-      <p class="hint">&#206;n fiecare zi ai de citit at&#226;tea pagini c&#226;t e ziua din lun&#259;. Ce nu bifezi se adun&#259;.</p>
-      <label class="mset">C&#226;te pagini are cartea <input type="text" inputmode="numeric" id="readTotal" placeholder="ex: 320"></label>
-      <label class="mset">De la ce pagin&#259; porne&#537;ti <input type="text" inputmode="numeric" id="readFrom" placeholder="ex: 120"></label>
+      <p class="hint">Pune c&#259;r&#539;ile &#238;n ordinea &#238;n care vrei s&#259; le cite&#537;ti. &#206;n fiecare zi ai de citit at&#226;tea pagini c&#226;t e ziua din lun&#259;; c&#226;nd termini o carte, ziua continu&#259; cu urm&#259;toarea.</p>
+      <table class="booktab">
+        <thead><tr><th>Cartea</th><th>Pagini</th><th></th></tr></thead>
+        <tbody id="bookRows"></tbody>
+      </table>
+      <form class="bookadd" id="bookAdd">
+        <input type="text" name="nume" placeholder="numele c&#259;r&#539;ii" aria-label="Numele c&#259;r&#539;ii urm&#259;toare">
+        <input type="text" name="pag" inputmode="numeric" placeholder="pag." aria-label="C&#226;te pagini are">
+        <button class="pri" type="submit">+</button>
+      </form>
+      <label class="mset" id="readFromRow" hidden>&#206;n prima carte sunt deja la pagina <input type="text" inputmode="numeric" id="readFrom" placeholder="0"></label>
       <div id="readInfo"></div>
     </div>
-  </details>
-  <details class="box" id="planBox" hidden>
+  </details>  <details class="box" id="planBox" hidden>
     <summary><h2>&#128197; Planul de citit</h2><span class="cnt" id="planCnt"></span></summary>
     <div class="mbody">
-      <p class="hint">De la pagina de start, zi cu zi: unde &#238;ncepi, c&#226;te pagini ai de citit &#537;i unde ajungi. Pagina la care ajungi azi e startul de m&#226;ine. E planul, nu eviden&#539;a &#8212; nu se schimb&#259; dup&#259; ce bifezi.</p>
+      <p class="hint">Zi cu zi, p&#226;n&#259; pe 31 decembrie: c&#226;te pagini ai de citit &#537;i din ce carte. Unde ajungi azi e de unde &#238;ncepi m&#226;ine. E planul, nu eviden&#539;a &#8212; nu se schimb&#259; dup&#259; ce bifezi.</p>
       <table class="plantab">
-        <thead><tr><th>Ziua</th><th>De la</th><th>Cite&#537;ti</th><th>P&#226;n&#259; la</th></tr></thead>
+        <thead><tr><th>Ziua</th><th>Pagini</th><th>De unde p&#226;n&#259; unde</th></tr></thead>
         <tbody id="planRows"></tbody>
       </table>
-    </div>
+      <p class="hint" id="planNote"></p>    </div>
   </details>
   <details class="box" id="syncBox">
     <summary><h2>&#8596; Sincronizare telefon &#537;i laptop</h2><span class="cnt" id="syncState"></span></summary>
@@ -325,6 +346,33 @@ function dynText(t){
    începe și până la care ajunge. Bifa nu se mai pune de mână, ci se deduce: un task e
    făcut dacă ai trecut de capătul lui. Așa, scrii pagina o dată și se aranjează tot —
    ce ai depășit se bifează și pleacă din listă, ce n-ai atins rămâne și se adună. */
+/* ---- lista de cărți ---- */
+/* Toate cărțile la rând formează o singură numărătoare: pagina 1 a cărții a doua vine
+   imediat după ultima pagină a primei. st.readPage e poziția în numărătoarea asta, iar
+   bookAt() o traduce înapoi în „cartea X, pagina Y”. Așa, planul rămâne un lanț simplu,
+   indiferent câte cărți ai pus. */
+function bookList(){if(!st.books)st.books=[];return st.books;}
+function bookPages(b){return Math.max(0,parseInt(b.pages,10)||0);}
+function booksTotal(){var n=0;bookList().forEach(function(b){n+=bookPages(b);});return n;}
+function bookAt(g){
+  var list=bookList(),acc=0;
+  for(var i=0;i<list.length;i++){
+    var p=bookPages(list[i]);
+    if(g<acc+p||i===list.length-1)return {i:i,book:list[i],start:acc,pag:Math.max(0,Math.min(p,g-acc))};
+    acc+=p;
+  }
+  return null;
+}
+/* o bucată de numărătoare, spusă în cărți: „Hobbitul 300→320 · Dune 1→7” */
+function spanText(a,b){
+  var list=bookList(),acc=0,out=[];
+  for(var i=0;i<list.length&&acc<b;i++){
+    var p=bookPages(list[i]),s=Math.max(a,acc),e=Math.min(b,acc+p);
+    if(e>s)out.push((list.length>1?esc(list[i].name||'Cartea '+(i+1))+' ':'')+(s-acc+1)+'&#8594;'+(e-acc));
+    acc+=p;
+  }
+  return out.join(' · ');
+}
 function readStart(){return parseInt(st.readFrom,10)||0;}
 function readPage(){
   var p=parseInt(st.readPage,10);
@@ -363,6 +411,8 @@ function migrateRead(){
   if(st.readV2)return false;
   st.readV2=true;
   st.readOn=true;
+  /* cartea de dinainte de lista devine prima din ea */
+  if(!st.books&&st.readTotal){st.books=[{id:uid(),name:'',pages:String(st.readTotal)}];}
   if(st.daily&&st.daily.length)
     st.daily=st.daily.filter(function(x){return x.text!=='Citit {pagini}';});
   save();return true;
@@ -566,50 +616,50 @@ function readFinish(ramase){
   return null;
 }
 function renderRead(){
-  /* de unde ai pornit + cât ai bifat de atunci = la ce pagină ești acum */
-  var tot=parseInt(st.readTotal,10)||0,from=parseInt(st.readFrom,10)||0,done=st.readDone||0;
-  var acum=from+done;
-  ['readTotal','readFrom'].forEach(function(id){
-    var el=$(id);
-    if(el&&el!==document.activeElement)el.value=(id==='readTotal'?st.readTotal:st.readFrom)||'';
-  });
-  $('readCnt').textContent=tot?'pagina '+acum+' din '+tot:(done?pagini(done)+' citite':'');
+  var tot=booksTotal(),acum=readPage(),list=bookList();
+  var inp=$('readFrom');
+  if(inp&&inp!==document.activeElement)inp.value=st.readFrom||'';
+  var la=bookAt(acum);
+  $('readCnt').textContent=tot
+    ?(list.length>1&&la?esc(la.book.name||'Cartea '+(la.i+1))+', pagina '+la.pag:'pagina '+acum+' din '+tot)
+    :'';
+  /* lista de cărți */
+  $('bookRows').innerHTML=list.map(function(b,i){
+    return '<tr><td><input type="text" data-bn="'+b.id+'" value="'+esc(b.name||'')+'" placeholder="numele cărții" aria-label="Numele cărții"></td>'+
+      '<td><input type="text" inputmode="numeric" data-bp="'+b.id+'" value="'+esc(b.pages||'')+'" placeholder="pag." aria-label="Câte pagini are"></td>'+
+      '<td><button type="button" data-bd="'+b.id+'" aria-label="Șterge cartea">✕</button></td></tr>';
+  }).join('')||'<tr><td colspan="3" class="hint">Nicio carte încă.</td></tr>';
+  $('readFromRow').hidden=!list.length;
+
   var h='';
   if(!tot){
-    h='<p class="hint">Scrie câte pagini are cartea și îți spun cât ți-a mai rămas și cam când o termini.'+
-      (done?' De când ții socoteala aici ai citit '+pagini(done)+'.':'')+'</p>';
+    h='<p class="hint">Adaugă prima carte și câte pagini are, și îți fac planul pe zile până la finalul anului.</p>';
   }else{
     var ramase=Math.max(0,tot-acum),pct=Math.min(100,Math.round(acum/tot*100));
     h='<div class="bar"><i style="width:'+pct+'%"></i></div>';
-    if(acum>tot){
-      h+='<p class="readinfo">Ai trecut de ultima pagină: '+acum+' din '+tot+'. Verifică de unde ai pornit.</p>';
-    }else if(ramase===0){
-      h+='<p class="readinfo"><b>Ai terminat cartea.</b> '+pagini(tot)+', toate citite.</p>';
+    if(ramase===0){
+      h+='<p class="readinfo"><b>Le-ai terminat pe toate.</b> '+pagini(tot)+', în '+list.length+(list.length===1?' carte':' cărți')+'.</p>';
     }else{
-      h+='<p class="readinfo">Ești la <b>pagina '+acum+'</b> din '+tot+'. Mai ai <b>'+pagini(ramase)+'</b>.</p>';
-      if(from)h+='<p class="hint">Ai pornit de la pagina '+from+(done?', iar de atunci ai bifat '+pagini(done):'')+'.</p>';
-      var zi=readFinish(ramase);
-      if(zi)h+='<p class="hint">Dacă bifezi în fiecare zi, termini pe <b>'+pretty(zi)+'</b>.</p>';
+      h+='<p class="readinfo">Ai citit <b>'+acum+'</b> din '+tot+' pagini. Mai ai <b>'+pagini(ramase)+'</b>'+
+        (list.length>1?' în '+list.length+' cărți':'')+'.</p>';
+      if(la&&list.length>1)h+='<p class="hint">Acum ești la <b>'+esc(la.book.name||'Cartea '+(la.i+1))+'</b>, pagina '+la.pag+' din '+bookPages(la.book)+'.</p>';
     }
-    h+='<div class="acts" style="padding:0"><button type="button" id="readNew">Am început altă carte</button></div>';
+    h+='<div class="acts" style="padding:0"><button type="button" id="readNew">Șterge tot și o iau de la capăt</button></div>';
   }
   $('readInfo').innerHTML=h;
   syncPageNow();
   renderPlanCitit();
 }
-$('readTotal').addEventListener('input',function(e){
-  st.readTotal=e.target.value.trim();save();renderRead();
-});
 $('readFrom').addEventListener('input',function(e){
   st.readFrom=e.target.value.trim();rebuildReadChain();save();renderRead();
 });
-['readFrom','readTotal'].forEach(function(id){
+['readFrom'].forEach(function(id){
   $(id).addEventListener('change',function(){render();});
 });
 $('readInfo').addEventListener('click',function(e){
   if(e.target.id!=='readNew')return;
-  st.readDone=0;st.readTotal='';st.readFrom='';save();renderRead();
-  var i=$('readTotal');if(i){i.value='';i.focus();}
+  st.readDone=0;st.readPage=0;st.readTotal='';st.readFrom='';st.readEnd=null;st.books=[];save();render();
+  var i=$('readFrom');if(i){i.value='';}
 });
 $('readBox').addEventListener('toggle',function(){
   if(st.readOpen!==$('readBox').open){st.readOpen=$('readBox').open;save();}
@@ -618,14 +668,11 @@ $('readBox').addEventListener('toggle',function(){
 /* Căsuța de deasupra zilei de azi. Scrii pagina la care ai ajuns, iar socoteala cărții
    se reface din ea: ce ai citit de când ții evidența = pagina de acum − pagina de start.
    Nu redesenăm zilele cât scrii, ca să nu sară cursorul din căsuță. */
-function pageNowAt(){
-  return (parseInt(st.readFrom,10)||0)+(st.readDone||0);
-}
+function pageNowAt(){return readPage();}
 function pageNowInfo(){
-  var tot=parseInt(st.readTotal,10)||0;
-  if(!tot)return '';
-  var ramase=Math.max(0,tot-pageNowAt());
-  return 'din '+tot+(ramase?' · mai ai '+pagini(ramase):' · gata');
+  var tot=booksTotal();if(!tot)return '';
+  var la=bookAt(readPage()),ramase=Math.max(0,tot-readPage());
+  return (la?'din '+bookPages(la.book):'')+(ramase?' \u00b7 mai ai '+pagini(ramase):' \u00b7 gata');
 }
 function syncPageNow(){
   var i=$('pageNow');
@@ -653,40 +700,44 @@ $('days').addEventListener('input',function(e){
    pagini are ziua de azi dau startul de mâine, și tot așa până se termină cartea.
    Nu atinge zilele și nu se uită la ce ai bifat — e planul, nu evidența. */
 function readPlanRows(){
-  var tot=parseInt(st.readTotal,10)||0;
+  var tot=booksTotal();
   if(!tot)return null;
-  var azi=ymd(new Date()),rows=[];
-  /* zilele care au deja task își au intervalul fixat; nu-l recalculăm */
+  var azi=ymd(new Date()),anul=new Date().getFullYear(),rows=[],pag=readStart();
+  /* zilele care au deja task își păstrează intervalul fixat */
   var ex=st.tasks.filter(function(t){return t.rd&&t.pana!=null;})
     .sort(function(a,b){return a.rd<b.rd?-1:a.rd>b.rd?1:0;});
-  var pag=readStart();
   ex.forEach(function(t){
     var pana=Math.min(t.pana,tot);
-    rows.push({zi:parse(t.rd),de:t.de,cat:pana-t.de,pana:pana,azi:t.rd===azi});
+    if(pana>t.de)rows.push({zi:parse(t.rd),de:t.de,cat:pana-t.de,pana:pana,azi:t.rd===azi});
     pag=t.pana;
   });
-  /* de aici încolo, zi cu zi, până se termină cartea */
+  /* mai departe, zi cu zi, dar numai până pe 31 decembrie */
   var d=ex.length?addDays(parse(ex[ex.length-1].rd),1):parse(azi),i=0;
-  while(pag<tot&&i<400){
+  while(pag<tot&&i<400&&d.getFullYear()===anul){
     var pana=Math.min(pag+d.getDate(),tot);
     rows.push({zi:new Date(d),de:pag,cat:pana-pag,pana:pana,azi:ymd(d)===azi});
     pag=pana;d=addDays(d,1);i++;
   }
+  rows.ramase=Math.max(0,tot-pag);     // ce nu încape anul ăsta
   return rows;
 }
 function renderPlanCitit(){
   var box=$('planBox'),rows=readPlanRows();
   if(!rows||!rows.length){
-    box.hidden=true;$('planRows').innerHTML='';$('planCnt').textContent='';
+    box.hidden=true;$('planRows').innerHTML='';$('planCnt').textContent='';$('planNote').textContent='';
     return;
   }
   box.hidden=false;
   var ultima=rows[rows.length-1];
-  $('planCnt').textContent=rows.length+(rows.length===1?' zi':' zile')+' · gata pe '+pretty(ultima.zi);
+  $('planCnt').textContent=rows.length+(rows.length===1?' zi':' zile')+
+    (rows.ramase?' · nu încap toate':' · gata pe '+pretty(ultima.zi));
+  $('planNote').innerHTML=rows.ramase
+    ? 'Până pe 31 decembrie nu încap toate: rămân <b>'+pagini(rows.ramase)+'</b>. Pe 1 ianuarie planul se reface singur, de la capăt, cu ce a mai rămas.'
+    : '';
   $('planRows').innerHTML=rows.map(function(r){
     return '<tr'+(r.azi?' class="azi"':'')+'>'+
       '<th scope="row">'+DAYS[(r.zi.getDay()+6)%7].slice(0,3)+' '+pretty(r.zi)+'</th>'+
-      '<td>'+r.de+'</td><td>'+r.cat+'</td><td><b>'+r.pana+'</b></td></tr>';
+      '<td>'+r.cat+'</td><td class="plansp">'+spanText(r.de,r.pana)+'</td></tr>';
   }).join('');
 }
 $('planBox').addEventListener('toggle',function(){
@@ -714,6 +765,36 @@ $('days').addEventListener('input',function(e){
 $('days').addEventListener('change',function(e){
   if(!e.target.dataset.ps)return;
   save();render();
+});
+/* ---- cărțile: adăugare, nume, pagini, ștergere ---- */
+function bookFind(id){
+  var l=bookList();
+  for(var i=0;i<l.length;i++)if(l[i].id===id)return l[i];
+  return null;
+}
+$('bookAdd').addEventListener('submit',function(e){
+  e.preventDefault();
+  var n=e.target.querySelector('input[name=nume]'),p=e.target.querySelector('input[name=pag]');
+  var nume=n.value.trim(),pag=parseInt(p.value,10)||0;
+  if(!nume&&!pag)return;
+  bookList().push({id:uid(),name:nume,pages:pag?String(pag):''});
+  n.value='';p.value='';
+  save();render();
+  $('bookAdd').querySelector('input[name=nume]').focus();
+});
+$('bookRows').addEventListener('input',function(e){
+  var b=bookFind(e.target.dataset.bn||e.target.dataset.bp);if(!b)return;
+  if(e.target.dataset.bn)b.name=e.target.value;
+  else b.pages=e.target.value.trim();
+  save();renderRead();
+});
+$('bookRows').addEventListener('click',function(e){
+  var id=e.target.dataset.bd;if(!id)return;
+  ask('Scoți cartea din listă?',function(v){
+    if(v!==true)return;
+    st.books=bookList().filter(function(b){return b.id!==id;});
+    save();render();
+  },{ok:'Scoate'});
 });
 rollover();ensureMonthly();ensureWeekly();ensureDaily();$('daily').open=!!st.dOpen;$('weekly').open=!!st.wOpen;$('readBox').open=!!st.readOpen;$('planBox').open=!!st.planOpen;render();
 var el=$('d-'+todayStr);if(el&&el.getBoundingClientRect().top>window.innerHeight)el.scrollIntoView({block:'start'});
