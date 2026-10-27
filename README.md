@@ -73,6 +73,17 @@ Contorul crește la bifare și scade la debifare, fără să poată trece sub ze
 **Am început altă carte** aduce contorul la zero și golește numărul de pagini și pagina de start. Nu umblă la
 bifele existente, deci dacă debifezi apoi un task bifat înainte de resetare, contorul nu
 scade sub zero — cel mult numără puțin în minus.
+
+#### Planul de citit
+
+Secțiunea **📅 Planul de citit**, la finalul paginii, arată zi cu zi: de la ce pagină
+începi, câte pagini ai de citit și până la ce pagină ajungi. Pagina la care ajungi azi e
+startul de mâine, și tot așa până se termină cartea. Ziua de azi e marcată.
+
+E o socoteală de sine stătătoare, pornită din pagina de start: **nu se uită la ce ai
+bifat** și nu atinge zilele. Apare doar dacă ai scris câte pagini are cartea, pentru că
+altfel n-are unde să se oprească. Ultima zi se taie exact la ultima pagină, deci poate
+cere mai puțin decât numărul zilei.
 („20 de pagini”, cu acordul corect).
 
 ## Ordinea pe ecran

@@ -111,6 +111,14 @@ ul.wl .wempty{color:var(--muted);font-size:.9rem;padding:4px 0}
 .pagenow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 2px 8px;font-size:.92rem;color:var(--muted)}
 .pagenow label{display:flex;align-items:center;gap:8px}
 .pagenow input{width:72px;text-align:center;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:6px 8px}
+.plantab{width:100%;border-collapse:collapse;margin-top:10px;font-size:.9rem}
+.plantab th,.plantab td{text-align:left;padding:5px 4px;border-bottom:1px solid var(--line)}
+.plantab thead th{font-size:.78rem;font-weight:400;color:var(--muted)}
+.plantab tbody th{font-weight:400;color:var(--muted);white-space:nowrap}
+.plantab td{width:64px}
+.plantab b{color:var(--accent)}
+.plantab tr.azi th,.plantab tr.azi td{background:var(--accent-soft)}
+.plantab tr.azi th{color:var(--ink);font-weight:700}
 </style>
 </head>
 <body>
@@ -160,6 +168,16 @@ ul.wl .wempty{color:var(--muted);font-size:.9rem;padding:4px 0}
       <label class="mset">C&#226;te pagini are cartea <input type="text" inputmode="numeric" id="readTotal" placeholder="ex: 320"></label>
       <label class="mset">De la ce pagin&#259; porne&#537;ti <input type="text" inputmode="numeric" id="readFrom" placeholder="ex: 120"></label>
       <div id="readInfo"></div>
+    </div>
+  </details>
+  <details class="box" id="planBox" hidden>
+    <summary><h2>&#128197; Planul de citit</h2><span class="cnt" id="planCnt"></span></summary>
+    <div class="mbody">
+      <p class="hint">De la pagina de start, zi cu zi: unde &#238;ncepi, c&#226;te pagini ai de citit &#537;i unde ajungi. Pagina la care ajungi azi e startul de m&#226;ine. E planul, nu eviden&#539;a &#8212; nu se schimb&#259; dup&#259; ce bifezi.</p>
+      <table class="plantab">
+        <thead><tr><th>Ziua</th><th>De la</th><th>Cite&#537;ti</th><th>P&#226;n&#259; la</th></tr></thead>
+        <tbody id="planRows"></tbody>
+      </table>
     </div>
   </details>
   <details class="box" id="syncBox">
@@ -536,6 +554,7 @@ function renderRead(){
   }
   $('readInfo').innerHTML=h;
   syncPageNow();
+  renderPlanCitit();
 }
 $('readTotal').addEventListener('input',function(e){
   st.readTotal=e.target.value.trim();save();renderRead();
@@ -582,7 +601,42 @@ $('days').addEventListener('input',function(e){
   var el=$('pageNowInfo');if(el)el.textContent=pageNowInfo();
   renderRead();
 });
-rollover();ensureMonthly();ensureWeekly();ensureDaily();$('daily').open=!!st.dOpen;$('weekly').open=!!st.wOpen;$('readBox').open=!!st.readOpen;render();
+/* ---- planul de citit ---- */
+/* Socoteală de sine stătătoare, pornită din pagina de start: pagina de azi plus câte
+   pagini are ziua de azi dau startul de mâine, și tot așa până se termină cartea.
+   Nu atinge zilele și nu se uită la ce ai bifat — e planul, nu evidența. */
+function readPlanRows(){
+  var tot=parseInt(st.readTotal,10)||0,from=parseInt(st.readFrom,10)||0;
+  if(!tot)return null;
+  var rows=[],d=new Date(),pag=from,i=0;
+  while(i<400){
+    var pana=pag+d.getDate(),gata=false;
+    if(pana>=tot){pana=tot;gata=true;}
+    rows.push({zi:new Date(d),de:pag,cat:pana-pag,pana:pana,azi:i===0});
+    if(gata)break;
+    pag=pana;d.setDate(d.getDate()+1);i++;
+  }
+  return rows;
+}
+function renderPlanCitit(){
+  var box=$('planBox'),rows=readPlanRows();
+  if(!rows||!rows.length){
+    box.hidden=true;$('planRows').innerHTML='';$('planCnt').textContent='';
+    return;
+  }
+  box.hidden=false;
+  var ultima=rows[rows.length-1];
+  $('planCnt').textContent=rows.length+(rows.length===1?' zi':' zile')+' · gata pe '+pretty(ultima.zi);
+  $('planRows').innerHTML=rows.map(function(r){
+    return '<tr'+(r.azi?' class="azi"':'')+'>'+
+      '<th scope="row">'+DAYS[(r.zi.getDay()+6)%7].slice(0,3)+' '+pretty(r.zi)+'</th>'+
+      '<td>'+r.de+'</td><td>'+r.cat+'</td><td><b>'+r.pana+'</b></td></tr>';
+  }).join('');
+}
+$('planBox').addEventListener('toggle',function(){
+  if(st.planOpen!==$('planBox').open){st.planOpen=$('planBox').open;save();}
+});
+rollover();ensureMonthly();ensureWeekly();ensureDaily();$('daily').open=!!st.dOpen;$('weekly').open=!!st.wOpen;$('readBox').open=!!st.readOpen;$('planBox').open=!!st.planOpen;render();
 var el=$('d-'+todayStr);if(el&&el.getBoundingClientRect().top>window.innerHeight)el.scrollIntoView({block:'start'});
 })();
 </script>
