@@ -46,6 +46,20 @@ Cum e făcut:
 - cele bifate din zilele trecute se șterg la trecerea zilei, ca să nu se adune degeaba.
 
 Într-un task zilnic obișnuit merg și șabloanele `{zi}` (numărul zilei) și `{pagini}`
+
+#### Cartea
+
+Secțiunea **📖 Cartea** ține socoteala: scrii câte pagini are cartea și îți spune cât ai
+citit, cât ți-a mai rămas și în ce zi termini dacă bifezi în fiecare zi. Data se află
+adunând, zi după zi, câte pagini dă fiecare — adică data ei din lună.
+
+Paginile citite se țin într-un contor propriu (`st.readDone`), nu se numără din task-uri:
+cele bifate din zilele trecute se șterg la trecerea zilei, deci istoricul s-ar pierde.
+Contorul crește la bifare și scade la debifare, fără să poată trece sub zero.
+
+**Am început altă carte** aduce contorul la zero și golește numărul de pagini. Nu umblă la
+bifele existente, deci dacă debifezi apoi un task bifat înainte de resetare, contorul nu
+scade sub zero — cel mult numără puțin în minus.
 („20 de pagini”, cu acordul corect).
 
 ## Ordinea pe ecran
