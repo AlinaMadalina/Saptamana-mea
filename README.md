@@ -43,6 +43,12 @@ Cum funcționează:
 - cache-ul persistent Firestore face ca totul să meargă offline: ce scrii fără internet
   pleacă singur la următorul semnal.
 
+Starea care vine din cloud trece prin `SaptApp.setState`, care rulează întâi întreținerea
+(`rollover`, `ensureMonthly`, `ensureWeekly`, `ensureDaily`) și abia apoi o arată. Fără
+asta, o stare salvată ieri readucea bifele de ieri peste resetul zilnic care tocmai
+avusese loc. Dacă aducerea la zi chiar a schimbat ceva, `sync.js` trimite înapoi
+versiunea corectată, ca toate dispozitivele să arate la fel.
+
 Un detaliu care contează: întreținerea pe care aplicația o face singură la pornire
 (mutarea task-urilor restante, resetul zilnic și cel săptămânal) rulează **înainte** ca
 `sync.js` să se încarce, deci nu trece prin `window.SaptSync` și nu marchează starea ca

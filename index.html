@@ -176,8 +176,16 @@ window.SaptApp={
   setState:function(ns){
     if(!ns||!Array.isArray(ns.tasks))return false;
     applyingRemote=true;
-    try{st=ns;editing=null;save();render();}finally{applyingRemote=false;}
+    try{
+      st=ns;editing=null;
+      /* Starea venită din altă parte poate fi dintr-o zi trecută: o aducem la zi
+         înainte s-o arătăm. Fără asta, bifele de ieri aduse din cloud par de azi
+         și anulează resetul zilnic care tocmai avusese loc. */
+      rollover();ensureMonthly();ensureWeekly();ensureDaily();
+      save();render();
+    }finally{applyingRemote=false;}
     return true;}
+
 };
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}

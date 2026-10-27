@@ -6,7 +6,7 @@
      - iconițe și fonturi Google → cache întâi, reîmprospătat în fundal
        (ca aplicația să meargă offline)
 */
-var VERSION = 'v1.1.0';
+var VERSION = 'v1.1.1';
 var SHELL = 'sapt-shell-' + VERSION;
 var RUNTIME = 'sapt-runtime-' + VERSION;
 

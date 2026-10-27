@@ -122,6 +122,10 @@
     if (!window.SaptApp.setState(ns)) return false;
     setMeta({ syncedAt: Date.now(), localChangedAt: d.clientAt || Date.now() });
     status(note);
+    /* setState aduce starea la zi, iar ce vine din cloud poate fi dintr-o zi trecută.
+       Dacă s-a schimbat ceva (resetul zilnic, cel săptămânal, task-uri restante mutate),
+       trimitem înapoi versiunea corectată, ca toate dispozitivele să arate la fel. */
+    if (JSON.stringify(window.SaptApp.getState()) !== d.json) schedulePush();
     return true;
   }
 
