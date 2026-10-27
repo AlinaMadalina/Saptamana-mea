@@ -119,6 +119,10 @@ ul.wl .wempty{color:var(--muted);font-size:.9rem;padding:4px 0}
 .plantab b{color:var(--accent)}
 .plantab tr.azi th,.plantab tr.azi td{background:var(--accent-soft)}
 .plantab tr.azi th{color:var(--ink);font-weight:700}
+.pslide{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
+.pslide input[type=range]{flex:1;min-width:120px;accent-color:var(--accent);height:22px}
+.pslide-l{font-size:.78rem;color:var(--muted);white-space:nowrap}
+.pslide-l b{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -316,6 +320,38 @@ function dynText(t){
    pe 28. Fiind task-uri obișnuite, se reportează singure prin rollover() și se adună în
    lista de azi până le bifezi, exact ca restul restanțelor. Au t.rd, deci isRec() le
    lasă pe dinafară: nu intră în runda săptămânală și n-o blochează. */
+/* ---- pagina e sursa adevărului ---- */
+/* Fiecare task de citit își ține intervalul lui, fixat când e creat: de la ce pagină
+   începe și până la care ajunge. Bifa nu se mai pune de mână, ci se deduce: un task e
+   făcut dacă ai trecut de capătul lui. Așa, scrii pagina o dată și se aranjează tot —
+   ce ai depășit se bifează și pleacă din listă, ce n-ai atins rămâne și se adună. */
+function readStart(){return parseInt(st.readFrom,10)||0;}
+function readPage(){
+  var p=parseInt(st.readPage,10);
+  return isNaN(p)?readStart():p;
+}
+function readChainEnd(){return st.readEnd==null?readStart():st.readEnd;}
+function syncReadTasks(){
+  var p=readPage();
+  st.tasks.forEach(function(t){if(t.rd&&t.pana!=null)t.done=p>=t.pana;});
+}
+function setReadPage(v){
+  var s=readStart();
+  v=parseInt(v,10);if(isNaN(v))v=s;
+  st.readPage=Math.max(s,v);
+  st.readDone=st.readPage-s;        // câmpul folosit de secțiunea Cartea
+  syncReadTasks();
+}
+/* când schimbi pagina de start, tot lanțul se reașază de la ea */
+function rebuildReadChain(){
+  var p=readStart();
+  st.tasks.filter(function(t){return t.rd;})
+    .sort(function(a,b){return a.rd<b.rd?-1:a.rd>b.rd?1:0;})
+    .forEach(function(t){t.de=p;t.pana=p+parse(t.rd).getDate();p=t.pana;});
+  st.readEnd=p;
+  if(readPage()<readStart())st.readPage=readStart();
+  setReadPage(readPage());
+}
 function readLabel(t){return 'Citit '+pagini(parse(t.rd).getDate());}
 function readOpen(){return st.tasks.filter(function(t){return t.rd&&!t.done;});}
 function readTotal(){
@@ -333,6 +369,8 @@ function migrateRead(){
 }
 function ensureRead(){
   if(!st.readOn)return false;
+  /* task-urile facute inainte de intervale: le dam unul, o singura data */
+  if(st.tasks.some(function(x){return x.rd&&x.pana==null;})){rebuildReadChain();save();}
   var t=ymd(new Date()),ch=false;
   // cele bifate din zilele trecute nu mai au ce cauta in lista
   var n0=st.tasks.length;
@@ -341,7 +379,10 @@ function ensureRead(){
   if(st.readLast!==t){
     st.readLast=t;ch=true;
     if(!st.tasks.some(function(x){return x.rd===t;}))
-      st.tasks.push({id:uid(),text:'Citit',rd:t,date:t,done:false,order:maxOrder(t)+1});
+      var de=readChainEnd(),pana=de+new Date().getDate();
+      st.tasks.push({id:uid(),text:'Citit',rd:t,de:de,pana:pana,date:t,done:false,order:maxOrder(t)+1});
+      st.readEnd=pana;
+      syncReadTasks();
   }
   if(ch)save();
   return ch;
@@ -405,7 +446,7 @@ function render(){
   order.forEach(function(i,pos){
     if(tIdx>0&&pos===7-tIdx)html+='<p class="pastsep">Zilele trecute din săptămâna asta</p>';
     var d=addDays(weekStart,i),ds=ymd(d);
-    var list=st.tasks.filter(function(t){return t.date===ds;}).sort(function(a,b){return (a.done-b.done)||(a.order-b.order);});
+    var list=st.tasks.filter(function(t){return t.date===ds;}).sort(function(a,b){return (a.done-b.done)||(a.rd&&b.rd?(a.rd<b.rd?-1:a.rd>b.rd?1:0):0)||(a.order-b.order);});
     var dn=list.filter(function(t){return t.done;}).length;total+=list.length;done+=dn;
     var isT=ds===todayStr,du=isT?st.daily.filter(function(x){return !x.done;}):[],dd=isT?st.daily.filter(function(x){return x.done;}):[];
     var L=list.length+du.length+dd.length,D=dn+dd.length;
@@ -418,7 +459,7 @@ function render(){
       var mv=t.from&&!t.done?'<br><span class="moved">mutat din '+dayName(t.from)+' '+pretty(parse(t.from))+(t.moves>1?' · amânat de '+t.moves+' ori':'')+'</span>':'';
       var mt=t.rd?'<br><span class="mtag">↻ citit</span>':t.mid?'<br><span class="mtag">↻ lunar</span>':(isRec(t)&&t.wd!==i?'<br><span class="mtag">↻ de '+DAYS[t.wd].toLowerCase()+'</span>':'');
       var lk=t.locked?(!t.done&&ds<todayStr?'<br><span class="missed">🔒 rămas nefăcut</span>':'<br><span class="locked-tag">🔒 blocat pe '+DAYS[i].toLowerCase()+'</span>'):'';
-      return '<li class="task'+(t.done?' done':'')+'"><input type="checkbox" data-chk="'+t.id+'"'+(t.done?' checked':'')+' aria-label="Făcut: '+esc(lbl)+'"><div>'+txt+mt+mv+lk+'</div>'+
+      return '<li class="task'+(t.done?' done':'')+'"><input type="checkbox" data-chk="'+t.id+'"'+(t.done?' checked':'')+' aria-label="Făcut: '+esc(lbl)+'"><div>'+txt+mt+mv+lk+(t.rd?readSlider(t):'')+'</div>'+
         '<button class="lk" data-lock="'+t.id+'" aria-pressed="'+(!!t.locked)+'" aria-label="'+(t.locked?'Deblochează':'Blochează în ziua asta')+'" title="'+(t.locked?'Deblochează':'Blochează în ziua asta')+'">🔒</button>'+
         '<button class="x" data-del="'+t.id+'" aria-label="Șterge task-ul">✕</button></li>';
     });
@@ -454,7 +495,7 @@ $('days').addEventListener('change',function(e){
   var wid=e.target.dataset.wchk;if(wid){setWeekly(wid,e.target.checked);return;}
   var id=e.target.dataset.chk;if(!id)return;var t=st.tasks.find(function(x){return x.id===id;});
   t.done=e.target.checked;if(t.mid)moveMonthly(t,t.done);
-  if(t.rd)readCount(t,t.done);
+  if(t.rd&&t.pana!=null){setReadPage(t.done?t.pana:t.de);}
   if(!t.arch&&!t.locked){
     if(t.done){t.prev={date:t.date,order:t.order};t.date=todayStr;t.order=maxOrder(todayStr)+1;}
     else if(t.prev){t.date=t.prev.date;t.order=t.prev.order;delete t.prev;rollover();}
@@ -560,7 +601,10 @@ $('readTotal').addEventListener('input',function(e){
   st.readTotal=e.target.value.trim();save();renderRead();
 });
 $('readFrom').addEventListener('input',function(e){
-  st.readFrom=e.target.value.trim();save();renderRead();
+  st.readFrom=e.target.value.trim();rebuildReadChain();save();renderRead();
+});
+['readFrom','readTotal'].forEach(function(id){
+  $(id).addEventListener('change',function(){render();});
 });
 $('readInfo').addEventListener('click',function(e){
   if(e.target.id!=='readNew')return;
@@ -593,10 +637,13 @@ function pageNowBox(){
     ' value="'+pageNowAt()+'" aria-label="La ce pagină sunt"></label>'+
     '<span id="pageNowInfo">'+pageNowInfo()+'</span></div>';
 }
+$('days').addEventListener('change',function(e){
+  if(e.target.id!=='pageNow')return;
+  render();
+});
 $('days').addEventListener('input',function(e){
   if(e.target.id!=='pageNow')return;
-  var from=parseInt(st.readFrom,10)||0,v=parseInt(e.target.value,10);
-  st.readDone=isNaN(v)?0:Math.max(0,v-from);
+  setReadPage(e.target.value);
   save();
   var el=$('pageNowInfo');if(el)el.textContent=pageNowInfo();
   renderRead();
@@ -606,15 +653,24 @@ $('days').addEventListener('input',function(e){
    pagini are ziua de azi dau startul de mâine, și tot așa până se termină cartea.
    Nu atinge zilele și nu se uită la ce ai bifat — e planul, nu evidența. */
 function readPlanRows(){
-  var tot=parseInt(st.readTotal,10)||0,from=parseInt(st.readFrom,10)||0;
+  var tot=parseInt(st.readTotal,10)||0;
   if(!tot)return null;
-  var rows=[],d=new Date(),pag=from,i=0;
-  while(i<400){
-    var pana=pag+d.getDate(),gata=false;
-    if(pana>=tot){pana=tot;gata=true;}
-    rows.push({zi:new Date(d),de:pag,cat:pana-pag,pana:pana,azi:i===0});
-    if(gata)break;
-    pag=pana;d.setDate(d.getDate()+1);i++;
+  var azi=ymd(new Date()),rows=[];
+  /* zilele care au deja task își au intervalul fixat; nu-l recalculăm */
+  var ex=st.tasks.filter(function(t){return t.rd&&t.pana!=null;})
+    .sort(function(a,b){return a.rd<b.rd?-1:a.rd>b.rd?1:0;});
+  var pag=readStart();
+  ex.forEach(function(t){
+    var pana=Math.min(t.pana,tot);
+    rows.push({zi:parse(t.rd),de:t.de,cat:pana-t.de,pana:pana,azi:t.rd===azi});
+    pag=t.pana;
+  });
+  /* de aici încolo, zi cu zi, până se termină cartea */
+  var d=ex.length?addDays(parse(ex[ex.length-1].rd),1):parse(azi),i=0;
+  while(pag<tot&&i<400){
+    var pana=Math.min(pag+d.getDate(),tot);
+    rows.push({zi:new Date(d),de:pag,cat:pana-pag,pana:pana,azi:ymd(d)===azi});
+    pag=pana;d=addDays(d,1);i++;
   }
   return rows;
 }
@@ -635,6 +691,29 @@ function renderPlanCitit(){
 }
 $('planBox').addEventListener('toggle',function(){
   if(st.planOpen!==$('planBox').open){st.planOpen=$('planBox').open;save();}
+});
+/* ---- sliderul de pe fiecare zi ---- */
+/* Fiecare task de citit are sub el un slider peste intervalul lui. Îl tragi și spui
+   până unde ai ajuns; când atingi capătul, task-ul se bifează singur. În timpul
+   tragerii nu redesenăm nimic, ca să nu scape de sub deget — abia la ridicare. */
+function readSlider(t){
+  if(t.de==null||t.pana==null)return '';
+  var p=Math.max(t.de,Math.min(t.pana,readPage()));
+  return '<div class="pslide"><input type="range" data-ps="'+t.id+'" min="'+t.de+'" max="'+t.pana+'" value="'+p+'" '+
+    'aria-label="Până la ce pagină ai ajuns"><span class="pslide-l" data-psl="'+t.id+'">'+
+    '<b>'+p+'</b> din '+t.pana+'</span></div>';
+}
+$('days').addEventListener('input',function(e){
+  var id=e.target.dataset.ps;if(!id)return;
+  var t=st.tasks.find(function(x){return x.id===id;});if(!t)return;
+  setReadPage(e.target.value);
+  var l=document.querySelector('[data-psl="'+id+'"]');
+  if(l)l.innerHTML='<b>'+readPage()+'</b> din '+t.pana;
+  syncPageNow();
+});
+$('days').addEventListener('change',function(e){
+  if(!e.target.dataset.ps)return;
+  save();render();
 });
 rollover();ensureMonthly();ensureWeekly();ensureDaily();$('daily').open=!!st.dOpen;$('weekly').open=!!st.wOpen;$('readBox').open=!!st.readOpen;$('planBox').open=!!st.planOpen;render();
 var el=$('d-'+todayStr);if(el&&el.getBoundingClientRect().top>window.innerHeight)el.scrollIntoView({block:'start'});

@@ -66,6 +66,25 @@ Căsuța trăiește în lista de zile, care se redesenează des; de-aceea scrisu
 cheamă `render()`, ci doar `save()` și actualizarea textului de alături, iar `renderRead()`
 o aduce la zi prin `syncPageNow()` când schimbi cartea din secțiunea de jos.
 
+#### Slider pe fiecare zi
+
+Fiecare task de citit are sub el un slider peste intervalul lui. Îl tragi și spui până
+unde ai ajuns; când atingi capătul, task-ul se bifează singur și, cu „Ascunde ce am
+făcut” pornit, dispare din listă. Ce n-ai atins rămâne și se adună cu ziua următoare.
+
+Modelul s-a schimbat: **pagina e sursa adevărului**, nu bifa. Fiecare task își ține
+intervalul (`t.de`, `t.pana`), fixat când e creat — capătul zilei precedente e începutul
+celei noi. `syncReadTasks()` deduce bifele: un task e făcut dacă pagina curentă a trecut
+de capătul lui. De-aceea merge în ambele sensuri — dacă scrii o pagină mai mică, bifele
+se desfac la loc.
+
+Bifatul de mână încă merge: mută pagina la capătul intervalului, respectiv înapoi la
+început. Task-urile de citit dintr-o zi se afișează în ordinea zilelor lor, nu în ordinea
+în care au fost mutate.
+
+În timpul tragerii sliderului nu se redesenează nimic, ca să nu scape de sub deget —
+abia la ridicare. La fel, căsuța „Sunt la pagina” reașază lista abia când termini de scris.
+
 Paginile citite se țin într-un contor propriu (`st.readDone`), nu se numără din task-uri:
 cele bifate din zilele trecute se șterg la trecerea zilei, deci istoricul s-ar pierde.
 Contorul crește la bifare și scade la debifare, fără să poată trece sub zero.
