@@ -100,6 +100,7 @@ ul.wl .wempty{color:var(--muted);font-size:.9rem;padding:4px 0}
 .syncl input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
 .syncacts{display:flex;gap:8px;margin:4px 0 2px}
 .syncacts[hidden]{display:none}
+.pastsep{margin:18px 2px 8px;font-size:.85rem;color:var(--muted);text-align:center}
 </style>
 </head>
 <body>
@@ -112,6 +113,11 @@ ul.wl .wempty{color:var(--muted);font-size:.9rem;padding:4px 0}
     <button id="next" aria-label="Săptămâna următoare">›</button>
     <button id="today">Azi</button>
   </div>
+  <div class="opts">
+    <label><input type="checkbox" id="hideDone"> Ascunde ce am făcut</label>
+    <span id="weekCnt"></span>
+  </div>
+  <div id="days"></div>
   <details class="box" id="daily">
     <summary><h2>↻ Task-uri zilnice</h2><span class="cnt" id="dCnt"></span></summary>
     <div class="mbody">
@@ -137,11 +143,6 @@ ul.wl .wempty{color:var(--muted);font-size:.9rem;padding:4px 0}
       <form class="add" id="mAdd" style="padding:10px 0 0"><input placeholder="Task lunar nou" aria-label="Task lunar nou"><button class="pri" type="submit">+</button></form>
     </div>
   </details>
-  <div class="opts">
-    <label><input type="checkbox" id="hideDone"> Ascunde ce am făcut</label>
-    <span id="weekCnt"></span>
-  </div>
-  <div id="days"></div>
   <details class="box" id="syncBox">
     <summary><h2>&#8596; Sincronizare telefon &#537;i laptop</h2><span class="cnt" id="syncState"></span></summary>
     <div class="mbody">
@@ -309,7 +310,13 @@ function render(){
   $('range').textContent=pretty(weekStart)+' – '+pretty(end)+' '+end.getFullYear();
   $('hideDone').checked=!!st.hideDone;
   days.className=st.hideDone?'hide-done':'';
-  for(var i=0;i<7;i++){
+  /* Ziua de azi prima, apoi restul săptămânii; zilele deja trecute rămân la coadă.
+     În alte săptămâni decât cea curentă ordinea rămâne luni–duminică. */
+  var tIdx=(todayStr>=ymd(weekStart)&&todayStr<=ymd(end))?((parse(todayStr).getDay()+6)%7):-1;
+  var order=[0,1,2,3,4,5,6];
+  if(tIdx>0)order=order.slice(tIdx).concat(order.slice(0,tIdx));
+  order.forEach(function(i,pos){
+    if(tIdx>0&&pos===7-tIdx)html+='<p class="pastsep">Zilele trecute din săptămâna asta</p>';
     var d=addDays(weekStart,i),ds=ymd(d);
     var list=st.tasks.filter(function(t){return t.date===ds;}).sort(function(a,b){return (a.done-b.done)||(a.order-b.order);});
     var dn=list.filter(function(t){return t.done;}).length;total+=list.length;done+=dn;
@@ -341,7 +348,7 @@ function render(){
     else if(st.hideDone&&L&&D===L&&!wN)html+='<p class="empty">Totul e bifat.</p>';
     if(ds>=todayStr)html+='<form class="add" data-day="'+ds+'"><input placeholder="Task nou pentru '+DAYS[i].toLowerCase()+'" aria-label="Task nou pentru '+DAYS[i]+'"><button class="pri" type="submit">+</button></form>';
     html+='</section>';
-  }
+  });
   days.innerHTML=html;
   var rec=st.tasks.filter(isRec),rd=rec.filter(function(t){return t.done;}).length;
   $('weekCnt').textContent=rec.length?'Runda: '+rd+' din '+rec.length+' făcute':'';

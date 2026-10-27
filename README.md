@@ -26,6 +26,16 @@ Când ai bifat tot, lista se reia de la capăt, fiecare task pe ziua lui.
 Când toate task-urile de pe zile sunt bifate, runda se reia: fiecare task se întoarce
 pe ziua lui din săptămâna următoare. Resetarea se poate anula din bara care apare jos.
 
+## Ordinea pe ecran
+
+Listele de task-uri care se repetă (zilnice, săptămânale, lunare) stau **sub** zile, nu
+deasupra: le deschizi doar când adaugi sau ștergi ceva.
+
+În săptămâna curentă, zilele se afișează **începând cu ziua de azi**, apoi mâine,
+poimâine și așa mai departe; zilele deja trecute din săptămână rămân la coadă, sub o
+linie care le desparte. Așa vezi ce ai de făcut imediat ce deschizi aplicația, fără să
+derulezi. În alte săptămâni decât cea curentă ordinea rămâne luni–duminică.
+
 ## Sincronizare
 
 Cardul **Sincronizare telefon și laptop**, la finalul paginii. Te conectezi cu
