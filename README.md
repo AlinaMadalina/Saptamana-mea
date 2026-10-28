@@ -22,9 +22,30 @@ Când ai bifat tot, lista se reia de la capăt, fiecare task pe ziua lui.
 | **zilnic** | apare în fiecare zi, primul în lista de azi; a doua zi apare iar nebifat |
 | **săptămânal** | apare în lista de azi până îl bifezi; lunea se debifează toate |
 | **lunar** | la fiecare 7 zile intră în săptămână primul din listă; bifat, trece la coadă |
+| **la interval** | îți ține data următoarei dăți; când îi vine data intră în lista de azi, iar bifat își mută data cu intervalul lui |
 
 Când toate task-urile de pe zile sunt bifate, runda se reia: fiecare task se întoarce
 pe ziua lui din săptămâna următoare. Resetarea se poate anula din bara care apare jos.
+
+### 🔄 La un anumit interval
+
+Pentru ce nu cade într-o zi anume a săptămânii: schimbat filtrul la 90 de zile, plătit o
+asigurare la 180, spălat perdelele la 60. Pentru fiecare scrii **la câte zile** se repetă
+și **data următoarei dăți**, amândouă oricând de schimbat din listă.
+
+Când îi vine data, intră în lista de azi ca un task obișnuit, cu eticheta „↻ la 90 de
+zile”. Nebifat, se mută singur de pe o zi pe alta, ca orice restanță. Bifat, data
+următoare pleacă **din ziua în care chiar l-ai făcut**, nu din cea în care trebuia: dacă
+întârzii o săptămână, următorul nu vine cu întârzierea aia în spate. Dacă îl debifezi,
+data se întoarce de unde era.
+
+Cum e făcut:
+
+- lista stă în `st.inter`, fiecare intrare `{id, text, zile, next}`;
+- `ensureInter()` pune un task în ziua de azi când `next <= azi` și nu e deja unul nebifat
+  pentru el; task-ul primește `t.iid` = id-ul intrării;
+- `moveInter()` mută `next` la bifare și îl pune la loc la debifare (din `t.iPrev`);
+- `t.iid` îl ține în afara rundei săptămânale (`isRec`), la fel ca `t.rd` și `t.mid`.
 
 ### Cititul: câte un task pe zi, care se adună
 

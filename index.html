@@ -123,6 +123,25 @@ ul.wl .wempty{color:var(--muted);font-size:.9rem;padding:4px 0}
 .pslide input[type=range]{flex:1;min-width:120px;accent-color:var(--accent);height:22px}
 .pslide-l{font-size:.78rem;color:var(--muted);white-space:nowrap}
 .pslide-l b{color:var(--accent)}
+.interl{list-style:none;margin:8px 0 0;padding:0}
+.iti{padding:10px 0;border-top:1px solid var(--line)}
+.iti:first-child{border-top:0}
+.itxt{width:100%;font:inherit;font-size:.95rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.irow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:7px}
+.ilbl{display:inline-flex;align-items:center;gap:5px;font-size:.84rem;color:var(--muted)}
+.ilbl input{font:inherit;font-size:.86rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:4px 6px}
+.ilbl input.izi{width:52px;text-align:center}
+.ifoot{display:flex;align-items:center;gap:8px;margin-top:6px}
+.iti .idel{margin-left:auto;border:0;background:transparent;color:var(--muted);padding:2px 6px;font-size:1rem}
+.ist{flex:1;min-width:0;font-size:.78rem;color:var(--muted)}
+.ist.due{color:var(--late);font-weight:700}
+.iempty{color:var(--muted);padding:8px 0;list-style:none}
+.interadd{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.interadd input[name=text]{flex:1 1 100%;min-width:0}
+.interadd input[name=zile]{width:62px;text-align:center}
+.interadd input[name=next]{flex:1 1 auto;min-width:0}
+.interadd input{font:inherit;font-size:.9rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:7px 9px}
+.interadd button{padding:7px 14px}
 .booktab{width:100%;border-collapse:collapse;margin-top:8px;font-size:.92rem}
 .booktab th,.booktab td{text-align:left;padding:4px 3px;border-bottom:1px solid var(--line)}
 .booktab thead th{font-size:.78rem;font-weight:400;color:var(--muted)}
@@ -179,6 +198,19 @@ ul.wl .wempty{color:var(--muted);font-size:.9rem;padding:4px 0}
       <form class="add" id="mAdd" style="padding:10px 0 0"><input placeholder="Task lunar nou" aria-label="Task lunar nou"><button class="pri" type="submit">+</button></form>
     </div>
   </details>
+  <details class="box" id="interBox">
+    <summary><h2>&#128260; La un anumit interval</h2><span class="cnt" id="iCnt"></span></summary>
+    <div class="mbody">
+      <p class="hint">Pentru ce se face din c&#226;nd &#238;n c&#226;nd, nu &#238;ntr-o anumit&#259; zi a s&#259;pt&#259;m&#226;nii: schimbat filtrul, pl&#259;tit o asigurare, sp&#259;lat perdelele. Scrii la c&#226;te zile se repet&#259; &#537;i data urm&#259;toarei d&#259;&#539;i. C&#226;nd &#238;i vine data, apare &#238;n lista de azi; dac&#259; nu-l bifezi, se mut&#259; de pe o zi pe alta ca orice task. C&#226;nd &#238;l bifezi, data urm&#259;toare se mut&#259; singur&#259; cu intervalul.</p>
+      <ul class="interl" id="interRows"></ul>
+      <form class="interadd" id="interAdd">
+        <input type="text" name="text" placeholder="ce ai de f&#259;cut" aria-label="Ce ai de f&#259;cut">
+        <input type="text" name="zile" inputmode="numeric" placeholder="zile" aria-label="La c&#226;te zile se repet&#259;">
+        <input type="date" name="next" aria-label="Data urm&#259;toarei d&#259;&#539;i">
+        <button class="pri" type="submit">+</button>
+      </form>
+    </div>
+  </details>
   <details class="box" id="readBox">
     <summary><h2>&#128218; C&#259;r&#539;ile mele</h2><span class="cnt" id="readCnt"></span></summary>
     <div class="mbody">
@@ -226,7 +258,7 @@ ul.wl .wempty{color:var(--muted);font-size:.9rem;padding:4px 0}
 var KEY='saptamana-mea-v1';
 var DAYS=['Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă','Duminică'];
 var MONTHS=['ian','feb','mar','apr','mai','iun','iul','aug','sep','oct','nov','dec'];
-var st={tasks:[],hideDone:false,monthly:[],mDay:0,mLast:null,weekly:[],wWeek:null,wOpen:false,daily:[],dDate:null,dOpen:false};
+var st={tasks:[],hideDone:false,monthly:[],mDay:0,mLast:null,weekly:[],wWeek:null,wOpen:false,daily:[],dDate:null,dOpen:false,inter:[]};
 try{var raw=JSON.parse(localStorage.getItem(KEY));if(raw&&raw.tasks)st=Object.assign(st,raw);}catch(e){}
 var applyingRemote=false;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(st));}catch(e){}
@@ -244,7 +276,7 @@ window.SaptApp={
       /* Starea venită din altă parte poate fi dintr-o zi trecută: o aducem la zi
          înainte s-o arătăm. Fără asta, bifele de ieri aduse din cloud par de azi
          și anulează resetul zilnic care tocmai avusese loc. */
-      rollover();ensureMonthly();ensureWeekly();ensureDaily();
+      rollover();ensureMonthly();ensureWeekly();ensureDaily();ensureInter();
       save();render();
     }finally{applyingRemote=false;}
     return true;}
@@ -258,12 +290,21 @@ function monday(d){var x=new Date(d.getFullYear(),d.getMonth(),d.getDate());var 
 function wdOf(s){return (parse(s).getDay()+6)%7;}
 function dayName(s){return DAYS[(parse(s).getDay()+6)%7];}
 function pretty(d){return d.getDate()+' '+MONTHS[d.getMonth()];}
+/* Întrebare scurtă cu da/nu, înainte de ce nu se mai poate lua înapoi.
+   Stă într-o funcție a ei ca să putem pune mai târziu o casetă a aplicației
+   în locul celei a browserului, fără să umblăm la cei care o cheamă;
+   opts.ok e eticheta butonului, de care caseta browserului nu ține cont. */
+function ask(text,cb,opts){
+  var da=false;
+  try{da=window.confirm(text);}catch(e){da=false;}
+  cb(da===true);
+}
 var todayStr=ymd(new Date()),weekStart=monday(new Date()),editing=null,lastReset=null,toastTimer=null;
 // Weekly repeat: each normal task remembers its home weekday (wd) and its place in that day (ho).
 // Tasks already done in previous weeks stay there as history (arch) and don't repeat.
 (function(){var wk0=ymd(weekStart),ch=false;
   st.tasks.forEach(function(t){
-    if(t.mid||t.rd||t.arch||t.wd!==undefined)return;ch=true;
+    if(t.mid||t.rd||t.iid||t.arch||t.wd!==undefined)return;ch=true;
     if(t.done&&t.date<wk0){t.arch=true;return;}
     t.wd=(parse(t.from||t.date).getDay()+6)%7;t.ho=t.order;
   });
@@ -275,7 +316,10 @@ var todayStr=ymd(new Date()),weekStart=monday(new Date()),editing=null,lastReset
   });
   if(ch)try{localStorage.setItem(KEY,JSON.stringify(st));}catch(e){}
 })();
-function isRec(t){return t.wd!==undefined&&!t.mid&&!t.rd&&!t.arch;}
+/* Task-urile puse de secțiunea lunară (mid), de cea de citit (rd) și de cea
+   la interval (iid) au stăpânul lor: nu intră în runda săptămânală, chiar
+   dacă au apucat să primească o zi de săptămână. */
+function isRec(t){return t.wd!==undefined&&!t.mid&&!t.rd&&!t.iid&&!t.arch;}
 function nextWd(wd){var d=addDays(parse(todayStr),1);while((d.getDay()+6)%7!==wd)d=addDays(d,1);return ymd(d);}
 // When every weekly task is done (a missed locked one counts too), they all start over,
 // each on the next occurrence of its own weekday.
@@ -472,6 +516,59 @@ function renderMonthly(){
     return '<li><span>'+esc(q.text)+b+'</span><button data-mup="'+i+'" aria-label="Mută mai sus"'+(i===0?' disabled':'')+'>▲</button><button data-mdown="'+i+'" aria-label="Mută mai jos"'+(i===st.monthly.length-1?' disabled':'')+'>▼</button><button data-mdel="'+q.id+'" aria-label="Șterge task-ul lunar">✕</button></li>';
   }).join('')||'<li style="display:block">Lista e goală.</li>';
 }
+/* Task-uri care se repetă la un interval ales, nu într-o zi a săptămânii:
+   schimbat filtrul la 90 de zile, plătit asigurarea la 180. Fiecare își ține
+   data următoarei dăți. Când îi vine data, intră în lista de azi ca orice
+   task — deci se și mută singur mai departe dacă nu-l bifezi. La bifare,
+   data următoare pleacă de la ziua în care chiar l-ai făcut, nu de la cea
+   în care trebuia făcut: altfel, dacă întârzii o săptămână, următorul ți-ar
+   veni tot cu întârzierea aia în spate. */
+function interList(){if(!Array.isArray(st.inter))st.inter=[];return st.inter;}
+function interFind(id){var l=interList();for(var i=0;i<l.length;i++)if(l[i].id===id)return l[i];return null;}
+function interZile(q){var n=parseInt(q.zile,10);return n>0?n:1;}
+function zileText(n){
+  if(n===1)return 'o zi';
+  var r=n%100;
+  return n+((r===0||r>=20)?' de ':' ')+'zile';   // 19 zile, dar 20 si 100 de zile
+}
+function interStare(q){
+  if(!q.next)return '';
+  if(q.next<todayStr)return 'trebuia pe '+pretty(parse(q.next));
+  if(q.next===todayStr)return 'azi';
+  var d=Math.round((parse(q.next)-parse(todayStr))/86400000);
+  return d===1?'mâine':'peste '+zileText(d);
+}
+function ensureInter(){
+  var ch=false;
+  interList().forEach(function(q){
+    if(!q.next||q.next>todayStr)return;
+    if(st.tasks.some(function(t){return t.iid===q.id&&!t.done;}))return;
+    st.tasks.push({id:uid(),text:q.text,date:todayStr,done:false,order:maxOrder(todayStr)+1,iid:q.id});
+    ch=true;
+  });
+  if(ch)save();
+  return ch;
+}
+function moveInter(t,done){
+  var q=interFind(t.iid);if(!q)return;
+  if(done&&!t.iMoved){t.iPrev=q.next;q.next=ymd(addDays(parse(todayStr),interZile(q)));t.iMoved=true;}
+  else if(!done&&t.iMoved){if(t.iPrev)q.next=t.iPrev;delete t.iPrev;t.iMoved=false;}
+}
+function renderInter(){
+  var l=interList();
+  var acum=l.filter(function(q){return q.next&&q.next<=todayStr;}).length;
+  $('iCnt').textContent=l.length?(acum?acum+' de făcut acum':l.length+' în listă'):'';
+  $('interRows').innerHTML=l.map(function(q){
+    var due=q.next&&q.next<=todayStr;
+    return '<li class="iti"><input class="itxt" type="text" data-it="'+q.id+'" value="'+esc(q.text)+'" aria-label="Ce am de făcut">'+
+      '<div class="irow">'+
+        '<span class="ilbl">la <input class="izi" type="text" inputmode="numeric" data-iz="'+q.id+'" value="'+esc(String(q.zile||''))+'" aria-label="La câte zile se repetă"> zile</span>'+
+        '<span class="ilbl">următoarea <input type="date" data-inx="'+q.id+'" value="'+(q.next||'')+'" aria-label="Data următoarei dăți"></span>'+
+      '</div>'+
+      '<div class="ifoot"><span class="ist'+(due?' due':'')+'">'+esc(interStare(q))+'</span>'+
+        '<button class="idel" data-idel="'+q.id+'" aria-label="Șterge task-ul">✕</button></div></li>';
+  }).join('')||'<li class="iempty">Lista e goală.</li>';
+}
 function previewFor(ds){
   if(!st.monthly.length||ds<=todayStr)return null;
   if((parse(ds).getDay()+6)%7!==st.mDay)return null;
@@ -482,7 +579,7 @@ function previewFor(ds){
 }
 function render(){
   renderRead();
-  renderBox(st.daily,'dl','dCnt',' făcute azi','d');renderBox(st.weekly,'wl','wCnt',' făcute','w');renderMonthly();
+  renderBox(st.daily,'dl','dCnt',' făcute azi','d');renderBox(st.weekly,'wl','wCnt',' făcute','w');renderMonthly();renderInter();
   var days=$('days'),html='',total=0,done=0;
   var end=addDays(weekStart,6);
   $('range').textContent=pretty(weekStart)+' – '+pretty(end)+' '+end.getFullYear();
@@ -507,7 +604,7 @@ function render(){
     var rows=list.map(function(t){
       var lbl=t.rd?readLabel(t):t.text;var txt=(editing===t.id&&!t.rd)?'<input class="edit" data-edit="'+t.id+'" value="'+esc(t.text)+'" aria-label="Editează task-ul">':'<span class="t"'+(t.rd?'':' data-id="'+t.id+'"')+'>'+esc(lbl)+'</span>';
       var mv=t.from&&!t.done?'<br><span class="moved">mutat din '+dayName(t.from)+' '+pretty(parse(t.from))+(t.moves>1?' · amânat de '+t.moves+' ori':'')+'</span>':'';
-      var mt=t.rd?'<br><span class="mtag">↻ citit</span>':t.mid?'<br><span class="mtag">↻ lunar</span>':(isRec(t)&&t.wd!==i?'<br><span class="mtag">↻ de '+DAYS[t.wd].toLowerCase()+'</span>':'');
+      var mt=t.rd?'<br><span class="mtag">↻ citit</span>':t.mid?'<br><span class="mtag">↻ lunar</span>':t.iid?'<br><span class="mtag">↻ la '+zileText(interZile(interFind(t.iid)||{}))+'</span>':(isRec(t)&&t.wd!==i?'<br><span class="mtag">↻ de '+DAYS[t.wd].toLowerCase()+'</span>':'');
       var lk=t.locked?(!t.done&&ds<todayStr?'<br><span class="missed">🔒 rămas nefăcut</span>':'<br><span class="locked-tag">🔒 blocat pe '+DAYS[i].toLowerCase()+'</span>'):'';
       return '<li class="task'+(t.done?' done':'')+'"><input type="checkbox" data-chk="'+t.id+'"'+(t.done?' checked':'')+' aria-label="Făcut: '+esc(lbl)+'"><div>'+txt+mt+mv+lk+(t.rd?readSlider(t):'')+'</div>'+
         '<button class="lk" data-lock="'+t.id+'" aria-pressed="'+(!!t.locked)+'" aria-label="'+(t.locked?'Deblochează':'Blochează în ziua asta')+'" title="'+(t.locked?'Deblochează':'Blochează în ziua asta')+'">🔒</button>'+
@@ -544,7 +641,7 @@ $('days').addEventListener('change',function(e){
   var did=e.target.dataset.dchk;if(did){setDaily(did,e.target.checked);return;}
   var wid=e.target.dataset.wchk;if(wid){setWeekly(wid,e.target.checked);return;}
   var id=e.target.dataset.chk;if(!id)return;var t=st.tasks.find(function(x){return x.id===id;});
-  t.done=e.target.checked;if(t.mid)moveMonthly(t,t.done);
+  t.done=e.target.checked;if(t.mid)moveMonthly(t,t.done);if(t.iid)moveInter(t,t.done);
   if(t.rd&&t.pana!=null){setReadPage(t.done?t.pana:t.de);}
   if(!t.arch&&!t.locked){
     if(t.done){t.prev={date:t.date,order:t.order};t.date=todayStr;t.order=maxOrder(todayStr)+1;}
@@ -599,6 +696,43 @@ $('wl').addEventListener('change',function(e){var id=e.target.dataset.wchk;if(id
 $('wl').addEventListener('click',function(e){var b=e.target.closest('[data-wdel]');if(!b)return;
   st.weekly=st.weekly.filter(function(x){return x.id!==b.dataset.wdel;});save();render();});
 $('weekly').addEventListener('toggle',function(){if(st.wOpen!==$('weekly').open){st.wOpen=$('weekly').open;save();}});
+$('interBox').addEventListener('toggle',function(){if(st.iOpen!==$('interBox').open){st.iOpen=$('interBox').open;save();}});
+$('interAdd').addEventListener('submit',function(e){
+  e.preventDefault();
+  var f=e.target,ti=f.querySelector('[name=text]'),zi=f.querySelector('[name=zile]'),ni=f.querySelector('[name=next]');
+  var text=ti.value.trim(),zile=parseInt(zi.value,10)||0;
+  if(!text)return;
+  var next=/^\d{4}-\d\d-\d\d$/.test(ni.value)?ni.value:todayStr;
+  interList().push({id:uid(),text:text,zile:String(zile>0?zile:30),next:next});
+  ti.value='';zi.value='';ni.value='';
+  save();ensureInter();render();
+  $('interAdd').querySelector('[name=text]').focus();
+});
+/* Cât scrii, salvăm și împrospătăm doar rândul de sub dată: dacă am redesena
+   tabelul la fiecare tastă, ți-ar sări cursorul din căsuță. */
+$('interRows').addEventListener('input',function(e){
+  var d=e.target.dataset,q=interFind(d.it||d.iz||d.inx);if(!q)return;
+  if(d.it)q.text=e.target.value;
+  else if(d.iz)q.zile=e.target.value.trim();
+  else q.next=e.target.value;
+  save();
+  var li=e.target.closest('.iti'),s=li&&li.querySelector('.ist');
+  if(s){s.textContent=interStare(q);s.className='ist'+(q.next&&q.next<=todayStr?' due':'');}
+});
+$('interRows').addEventListener('change',function(e){
+  var d=e.target.dataset;if(!(d.it||d.iz||d.inx))return;
+  ensureInter();render();
+});
+$('interRows').addEventListener('click',function(e){
+  var id=e.target.dataset.idel;if(!id)return;
+  ask('Scoți task-ul din listă?',function(v){
+    if(v!==true)return;
+    st.inter=interList().filter(function(q){return q.id!==id;});
+    /* și task-ul pe care l-a pus în zile, dacă nu apucaseși să-l bifezi */
+    st.tasks=st.tasks.filter(function(t){return !(t.iid===id&&!t.done);});
+    save();render();
+  },{ok:'Scoate'});
+});
 $('mDay').addEventListener('change',function(e){st.mDay=+e.target.value;st.mLast=lastOcc();save();render();});
 /* ---- cartea ---- */
 /* Paginile citite se țin într-un contor propriu, nu se numără din task-uri: cele bifate
@@ -796,7 +930,7 @@ $('bookRows').addEventListener('click',function(e){
     save();render();
   },{ok:'Scoate'});
 });
-rollover();ensureMonthly();ensureWeekly();ensureDaily();$('daily').open=!!st.dOpen;$('weekly').open=!!st.wOpen;$('readBox').open=!!st.readOpen;$('planBox').open=!!st.planOpen;render();
+rollover();ensureMonthly();ensureWeekly();ensureDaily();ensureInter();$('daily').open=!!st.dOpen;$('weekly').open=!!st.wOpen;$('interBox').open=!!st.iOpen;$('readBox').open=!!st.readOpen;$('planBox').open=!!st.planOpen;render();
 var el=$('d-'+todayStr);if(el&&el.getBoundingClientRect().top>window.innerHeight)el.scrollIntoView({block:'start'});
 })();
 </script>
